@@ -19,6 +19,20 @@ class ImageOptimizationService
         // Ensure directory exists on public disk
         Storage::disk('public')->makeDirectory($dir);
 
+        $ext = strtolower($file->getClientOriginalExtension() ?: '');
+        if ($ext === 'svg' || $file->getMimeType() === 'image/svg+xml') {
+            $svg = file_get_contents($file->getRealPath()) ?: '';
+            $svg = preg_replace('/<script\b[^>]*>.*?<\/script>/isu', '', $svg) ?? $svg;
+            $svg = preg_replace('/<foreignObject\b[^>]*>.*?<\/foreignObject>/isu', '', $svg) ?? $svg;
+            $svg = preg_replace('/\s+on[a-z]+\s*=\s*(["\']).*?\1/iu', '', $svg) ?? $svg;
+            $svg = preg_replace('/javascript\s*:/iu', '', $svg) ?? $svg;
+
+            $relativePath = "{$dir}/{$baseName}.svg";
+            Storage::disk('public')->put($relativePath, $svg);
+
+            return $relativePath;
+        }
+
         if (function_exists('imagewebp') && function_exists('imagecreatefromstring')) {
             $raw = file_get_contents($file->getRealPath());
             $src = $raw !== false ? @imagecreatefromstring($raw) : false;

@@ -80,8 +80,8 @@
 
                 <!-- Featured Image Upload -->
                 <div class="rounded-md border border-dashed border-gray-300 bg-gray-50 p-4">
-                    <label for="featured_image" class="block text-sm font-semibold text-gray-900">Foto / Gambar Utama (Wajib, Maks 2 MB) <span class="text-red-700">*</span></label>
-                    <input type="file" id="featured_image" name="featured_image" accept="image/jpeg,image/png,image/webp" required
+                    <label for="featured_image" class="block text-sm font-semibold text-gray-900">Foto / Gambar Utama (Wajib, Maks 500 KB: PNG, JPEG, JPG, WebP, JFIF, SVG) <span class="text-red-700">*</span></label>
+                    <input type="file" id="featured_image" name="featured_image" accept=".png,.jpeg,.jpg,.webp,.jfif,.svg,image/png,image/jpeg,image/webp,image/svg+xml" required
                            class="mt-2 block w-full text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-gray-900 file:px-3.5 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-red-700">
                     <div id="imagePreviewBox" class="hidden mt-3">
                         <img id="imagePreview" src="#" alt="Preview Foto" class="max-h-56 rounded border border-gray-200 object-cover">
@@ -330,14 +330,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     : `Terlalu banyak link! Hapus ${state.linkCount - MAX_LINKS} link lagi.`)
         );
 
-        // 3. Image
-        state.hasImage = imageInput.files && imageInput.files.length > 0;
+        // 3. Image (Format & Max 500 KB)
+        const allowedExtensions = ['png', 'jpeg', 'jpg', 'webp', 'jfif', 'svg'];
+        const maxBytes = 500 * 1024;
+        const selectedFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+        let imageError = '';
+
+        if (!selectedFile) {
+            state.hasImage = false;
+            imageError = 'Unggah 1 foto utama (Maks 500 KB: PNG, JPEG, JPG, WebP, JFIF, SVG).';
+        } else {
+            const ext = (selectedFile.name.split('.').pop() || '').toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                state.hasImage = false;
+                imageError = `Format .${ext || '?'} ditolak! Hanya boleh PNG, JPEG, JPG, WebP, JFIF, atau SVG.`;
+            } else if (selectedFile.size > maxBytes) {
+                state.hasImage = false;
+                const kb = Math.round(selectedFile.size / 1024);
+                imageError = `Ukuran file terlalu besar (${kb} KB). Maksimal 500 KB.`;
+            } else {
+                state.hasImage = true;
+            }
+        }
+        state.imageError = imageError;
+
         setCardState(
             'imageCheckCard', 'imageStatusTitle', 'imageStatusBadge', 'imageStatusDesc',
             state.hasImage,
-            '3. Wajib Foto Utama',
-            state.hasImage ? 'Siap' : 'Belum Ada',
-            state.hasImage ? `File: ${imageInput.files[0].name}` : 'Unggah 1 foto utama (JPG/PNG/WebP).'
+            '3. Wajib Foto Utama (Maks 500 KB)',
+            state.hasImage ? 'Siap' : (selectedFile ? 'Ditolak' : 'Belum Ada'),
+            state.hasImage
+                ? `File: ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB)`
+                : imageError
         );
 
         // 4. Banned Keywords
@@ -381,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             problems.push(`Terdeteksi ${state.linkCount} link keluar (maksimal hanya ${MAX_LINKS} link).`);
         }
         if (!state.hasImage) {
-            problems.push('Foto utama artikel belum diunggah.');
+            problems.push(state.imageError || 'Foto utama artikel belum valid atau melebihi 500 KB.');
         }
         if (state.bannedFound.length > 0) {
             problems.push(`Konten terindikasi melanggar kebijakan (Judi Online/Game Online/Pornografi): ${state.bannedFound.join(', ')}.`);
