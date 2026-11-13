@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" fill="none">
+  <rect width="1200" height="675" fill="#27272A"/>
+  <rect x="0" y="0" width="1200" height="10" fill="#0D9488"/>
+  <circle cx="960" cy="340" r="200" fill="#115E59" opacity="0.45"/>
+  <rect x="80" y="130" width="200" height="36" rx="4" fill="#0D9488"/>
+  <text x="180" y="154" font-family="sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">GAYA HIDUP</text>
+  <text x="80" y="255" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#F8FAFC">Kesehatan, Wisata &amp;</text>
+  <text x="80" y="325" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#99F6E4">Budaya Nusantara</text>
+  <line x1="80" y1="375" x2="260" y2="375" stroke="#14B8A6" stroke-width="4"/>
+  <text x="80" y="425" font-family="sans-serif" font-size="22" fill="#D4D4D8">Ilustrasi Editorial BeritaPraktis • Wellness &amp; Destinasi</text>
+</svg>

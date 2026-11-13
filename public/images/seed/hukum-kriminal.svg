@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" fill="none">
+  <rect width="1200" height="675" fill="#18181B"/>
+  <rect x="0" y="0" width="1200" height="10" fill="#DC2626"/>
+  <rect x="860" y="120" width="240" height="430" rx="8" stroke="#3F3F46" stroke-width="3" opacity="0.6"/>
+  <rect x="80" y="130" width="240" height="36" rx="4" fill="#DC2626"/>
+  <text x="200" y="154" font-family="sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">HUKUM &amp; KRIMINAL</text>
+  <text x="80" y="255" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#FAFAFA">Penegakan Hukum &amp;</text>
+  <text x="80" y="325" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#FCA5A5">Regulasi Nasional</text>
+  <line x1="80" y1="375" x2="260" y2="375" stroke="#EF4444" stroke-width="4"/>
+  <text x="80" y="425" font-family="sans-serif" font-size="22" fill="#A1A1AA">Ilustrasi Editorial BeritaPraktis • Keadilan &amp; Perundang-undangan</text>
+</svg>

@@ -84,6 +84,10 @@ class Article extends Model
             return $this->featured_image;
         }
 
+        if (str_starts_with($this->featured_image, 'images/')) {
+            return asset($this->featured_image);
+        }
+
         return asset('storage/' . ltrim($this->featured_image, '/'));
     }
 

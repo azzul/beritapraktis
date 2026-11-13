@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" fill="none">
+  <rect width="1200" height="675" fill="#0F172A"/>
+  <rect x="0" y="0" width="1200" height="10" fill="#059669"/>
+  <path d="M760 520 L880 390 L980 440 L1120 220" stroke="#10B981" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+  <rect x="80" y="130" width="240" height="36" rx="4" fill="#059669"/>
+  <text x="200" y="154" font-family="sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">BISNIS &amp; EKONOMI</text>
+  <text x="80" y="255" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#F8FAFC">Pasar, Fiskal &amp; UMKM</text>
+  <text x="80" y="325" font-family="Georgia, serif" font-size="54" font-weight="700" fill="#A7F3D0">Ekonomi Indonesia</text>
+  <line x1="80" y1="375" x2="260" y2="375" stroke="#10B981" stroke-width="4"/>
+  <text x="80" y="425" font-family="sans-serif" font-size="22" fill="#94A3B8">Ilustrasi Editorial BeritaPraktis • Analisis Bisnis &amp; Keuangan</text>
+</svg>
