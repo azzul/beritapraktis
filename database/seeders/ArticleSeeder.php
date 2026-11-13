@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\User;
 use App\Services\ArticleValidationService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class ArticleSeeder extends Seeder
@@ -364,7 +365,7 @@ class ArticleSeeder extends Seeder
             ],
         ];
 
-        // 40 foto fotografi nyata unik dari Pexels (5 foto berbeda per kategori, tanpa duplikasi)
+        // Fallback 40 foto fotografi nyata unik dari Pexels (jika PIXABAY_API_KEY belum diisi/offline)
         $pexelsPool = [
             'politik' => ['39502725', '10344433', '39420194', '35380038', '38004630'],
             'bisnis-ekonomi' => ['40441676', '37945815', '11045736', '7078373', '7580827'],
@@ -376,6 +377,12 @@ class ArticleSeeder extends Seeder
             'press-release' => ['34774346', '29708261', '29708269', '29708265', '7413915'],
         ];
         $categoryPhotoCounter = [];
+        $usedUrls = [];
+        $pixabayKey = (string) config('services.pixabay.key');
+
+        if ($pixabayKey !== '') {
+            $this->command?->info('Mengambil 40 foto unik dari Pixabay API...');
+        }
 
         foreach ($articles as $index => $item) {
             $catSlug = $item['category'];
@@ -385,10 +392,21 @@ class ArticleSeeder extends Seeder
             $catPos = $categoryPhotoCounter[$catSlug] ?? 0;
             $categoryPhotoCounter[$catSlug] = $catPos + 1;
 
-            $photoId = $pexelsPool[$catSlug][$catPos] ?? null;
-            $featuredImage = $photoId
-                ? "https://images.pexels.com/photos/{$photoId}/pexels-photo-{$photoId}.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                : 'images/seed/' . $catSlug . '.jpg';
+            $pixabayPhoto = $pixabayKey !== ''
+                ? $this->fetchPixabayPhoto($pixabayKey, $item['title'], $catSlug, $usedUrls)
+                : null;
+
+            if ($pixabayPhoto) {
+                $featuredImage = $pixabayPhoto['url'];
+                $imageCaption = $pixabayPhoto['credit'] . ' | Sumber informasi: ' . $item['source_name'];
+                $usedUrls[] = $featuredImage;
+            } else {
+                $photoId = $pexelsPool[$catSlug][$catPos] ?? null;
+                $featuredImage = $photoId
+                    ? "https://images.pexels.com/photos/{$photoId}/pexels-photo-{$photoId}.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                    : 'images/seed/' . $catSlug . '.jpg';
+                $imageCaption = 'Foto: Pexels (Royalty-Free) | Sumber informasi: ' . $item['source_name'];
+            }
 
             $content = $this->buildEthicalEditorialBody(
                 $item['title'],
@@ -410,7 +428,7 @@ class ArticleSeeder extends Seeder
                     'content' => $content,
                     'featured_image' => $featuredImage,
                     'image_alt' => 'Foto editorial: ' . $item['title'],
-                    'image_caption' => 'Foto: Pexels (Royalty-Free) | Sumber informasi: ' . $item['source_name'],
+                    'image_caption' => $imageCaption,
                     'word_count' => $wordCount,
                     'outbound_links_count' => count($links),
                     'outbound_links' => $links,
@@ -422,6 +440,83 @@ class ArticleSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    /**
+     * @param list<string> $usedUrls
+     * @return array{url: string, credit: string}|null
+     */
+    private function fetchPixabayPhoto(string $apiKey, string $title, string $catSlug, array $usedUrls): ?array
+    {
+        $query = $this->buildPixabayQuery($title, $catSlug);
+
+        try {
+            $response = Http::timeout(8)->get('https://pixabay.com/api/', [
+                'key' => $apiKey,
+                'q' => $query,
+                'image_type' => 'photo',
+                'orientation' => 'horizontal',
+                'safesearch' => 'true',
+                'per_page' => 20,
+            ]);
+
+            if ($response->successful()) {
+                foreach ($response->json('hits', []) as $hit) {
+                    $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
+                    if ($url && !in_array($url, $usedUrls, true)) {
+                        $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                        return [
+                            'url' => $url,
+                            'credit' => "Foto: {$author} / Pixabay",
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function buildPixabayQuery(string $title, string $catSlug): string
+    {
+        $lower = mb_strtolower($title);
+        $topicMap = [
+            'bencana|banjir|sungai' => 'flood river disaster nature',
+            'duta besar|diplomasi' => 'diplomacy flag meeting',
+            'stasiun|kereta' => 'train station railway',
+            'pajak|keuangan|inflasi' => 'finance economy chart',
+            'wisatawan|hotel|pariwisata' => 'tourism hotel travel',
+            'umkm|usaha|manufaktur' => 'factory industry business',
+            'ai|kecerdasan buatan|komputasi' => 'artificial intelligence technology',
+            'siber|keamanan' => 'cybersecurity server network',
+            'peternakan|pangan|vaksinasi' => 'livestock farm agriculture',
+            'pertanian|petani|lahan|budidaya' => 'rice field farmer agriculture',
+            'universitas|kampus|mahasiswa|riset' => 'university campus students',
+            'sekolah|pendidikan' => 'school classroom education',
+            'polri|tersangka|pidana|hukum|kuhp' => 'law court justice gavel',
+            'kesehatan|medical' => 'hospital healthcare medical',
+            'lari|run|olahraga' => 'running marathon sport',
+            'startup|investasi|bursa|ekosistem' => 'startup office meeting',
+        ];
+
+        foreach ($topicMap as $pattern => $englishQuery) {
+            if (preg_match("/({$pattern})/u", $lower)) {
+                return $englishQuery;
+            }
+        }
+
+        return match ($catSlug) {
+            'politik' => 'government parliament building',
+            'bisnis-ekonomi' => 'business office finance',
+            'teknologi' => 'technology digital computer',
+            'pertanian' => 'agriculture farm green',
+            'pendidikan' => 'education university library',
+            'hukum-kriminal' => 'justice law court',
+            'gaya-hidup' => 'lifestyle wellness travel',
+            default => 'press conference media',
+        };
     }
 
     private function buildEthicalEditorialBody(string $title, string $summary, string $sourceName, string $sourceUrl): string
