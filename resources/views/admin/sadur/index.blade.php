@@ -69,9 +69,14 @@
         </button>
     </form>
 
-    <div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
-        <strong>Otomatisasi Harian (Cron / Task Scheduler):</strong> Anda juga dapat menjadwalkan perintah
-        <code>php artisan news:auto-sadur --limit=3 --publish</code> di server hosting/VPS agar portal terisi berita terupdate setiap hari secara otomatis.
+    <div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600 space-y-2">
+        <p>
+            <strong>Otomatisasi Harian (Cron / Task Scheduler):</strong> Anda juga dapat menjadwalkan perintah
+            <code>php artisan news:auto-sadur --limit=3 --publish</code> di server hosting/VPS agar portal terisi berita terupdate setiap hari secara otomatis.
+        </p>
+        <p>
+            <strong>Foto Otomatis Unik (Opsional):</strong> Isi <code>PEXELS_API_KEY</code> pada file <code>.env</code> (gratis di pexels.com/api) agar setiap berita saduran otomatis mendapat foto fotografi nyata yang sesuai judul dan tidak kembar. Jika kosong, sistem memakai rotasi foto stok Pexels per kategori.
+        </p>
     </div>
 </div>
 

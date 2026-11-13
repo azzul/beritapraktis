@@ -364,9 +364,31 @@ class ArticleSeeder extends Seeder
             ],
         ];
 
+        // 40 foto fotografi nyata unik dari Pexels (5 foto berbeda per kategori, tanpa duplikasi)
+        $pexelsPool = [
+            'politik' => ['39502725', '10344433', '39420194', '35380038', '38004630'],
+            'bisnis-ekonomi' => ['40441676', '37945815', '11045736', '7078373', '7580827'],
+            'teknologi' => ['37605911', '207580', '16018144', '6804613', '1181341'],
+            'pertanian' => ['33597069', '34204300', '36775904', '32954693', '34360581'],
+            'pendidikan' => ['31367511', '31367512', '31367502', '31367499', '31367504'],
+            'hukum-kriminal' => ['6077328', '37726687', '8693379', '6077326', '34817075'],
+            'gaya-hidup' => ['16961403', '28735804', '29022599', '31498691', '38128917'],
+            'press-release' => ['34774346', '29708261', '29708269', '29708265', '7413915'],
+        ];
+        $categoryPhotoCounter = [];
+
         foreach ($articles as $index => $item) {
-            $categoryId = $categories[$item['category']] ?? $categories->first();
+            $catSlug = $item['category'];
+            $categoryId = $categories[$catSlug] ?? $categories->first();
             $slug = Str::slug($item['title']);
+
+            $catPos = $categoryPhotoCounter[$catSlug] ?? 0;
+            $categoryPhotoCounter[$catSlug] = $catPos + 1;
+
+            $photoId = $pexelsPool[$catSlug][$catPos] ?? null;
+            $featuredImage = $photoId
+                ? "https://images.pexels.com/photos/{$photoId}/pexels-photo-{$photoId}.jpeg?auto=compress&cs=tinysrgb&w=1200"
+                : 'images/seed/' . $catSlug . '.jpg';
 
             $content = $this->buildEthicalEditorialBody(
                 $item['title'],
@@ -386,9 +408,9 @@ class ArticleSeeder extends Seeder
                     'title' => $item['title'],
                     'excerpt' => $item['excerpt'],
                     'content' => $content,
-                    'featured_image' => 'images/seed/' . $item['category'] . '.jpg',
+                    'featured_image' => $featuredImage,
                     'image_alt' => 'Foto editorial: ' . $item['title'],
-                    'image_caption' => 'Ilustrasi Foto BeritaPraktis | Sumber informasi: ' . $item['source_name'],
+                    'image_caption' => 'Foto: Pexels (Royalty-Free) | Sumber informasi: ' . $item['source_name'],
                     'word_count' => $wordCount,
                     'outbound_links_count' => count($links),
                     'outbound_links' => $links,
