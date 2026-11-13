@@ -131,21 +131,52 @@ class RssSadurService
     }
 
     /**
-     * Fetch a unique real photo from Pexels API (when PEXELS_API_KEY is set),
-     * falling back to a rotating pool of curated Pexels stock URLs per category.
+     * Fetch a unique real photo from Pixabay API (when PIXABAY_API_KEY is set)
+     * or Pexels API (when PEXELS_API_KEY is set), falling back to a rotating pool
+     * of curated Pexels stock URLs per category.
      *
      * @param list<string> $usedImages
      * @return array{url: string, credit: string}
      */
     private function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages): array
     {
-        $apiKey = (string) config('services.pexels.key');
+        $query = $this->buildPhotoSearchQuery($title, $categorySlug);
 
-        if ($apiKey !== '') {
+        $pixabayKey = (string) config('services.pixabay.key');
+        if ($pixabayKey !== '') {
             try {
-                $query = $this->buildPhotoSearchQuery($title, $categorySlug);
+                $response = Http::timeout(8)->get('https://pixabay.com/api/', [
+                    'key' => $pixabayKey,
+                    'q' => $query,
+                    'image_type' => 'photo',
+                    'orientation' => 'horizontal',
+                    'safesearch' => 'true',
+                    'per_page' => 15,
+                ]);
+
+                if ($response->successful()) {
+                    $hits = $response->json('hits', []);
+                    foreach ($hits as $hit) {
+                        $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
+                        if ($url && !in_array($url, $usedImages, true)) {
+                            $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                            return [
+                                'url' => $url,
+                                'credit' => "Foto: {$author} / Pixabay",
+                            ];
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Fallback to Pexels or curated pool below
+            }
+        }
+
+        $pexelsKey = (string) config('services.pexels.key');
+        if ($pexelsKey !== '') {
+            try {
                 $response = Http::timeout(8)
-                    ->withHeaders(['Authorization' => $apiKey])
+                    ->withHeaders(['Authorization' => $pexelsKey])
                     ->get('https://api.pexels.com/v1/search', [
                         'query' => $query,
                         'orientation' => 'landscape',

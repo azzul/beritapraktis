@@ -55,6 +55,10 @@ return [
         'max_articles_per_month' => (int) env('MAX_ARTICLES_PER_MONTH', 20),
     ],
 
+    'pixabay' => [
+        'key' => env('PIXABAY_API_KEY'),
+    ],
+
     'pexels' => [
         'key' => env('PEXELS_API_KEY'),
     ],

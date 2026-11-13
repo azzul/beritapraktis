@@ -75,7 +75,7 @@
             <code>php artisan news:auto-sadur --limit=3 --publish</code> di server hosting/VPS agar portal terisi berita terupdate setiap hari secara otomatis.
         </p>
         <p>
-            <strong>Foto Otomatis Unik (Opsional):</strong> Isi <code>PEXELS_API_KEY</code> pada file <code>.env</code> (gratis di pexels.com/api) agar setiap berita saduran otomatis mendapat foto fotografi nyata yang sesuai judul dan tidak kembar. Jika kosong, sistem memakai rotasi foto stok Pexels per kategori.
+            <strong>Foto Otomatis Unik (Opsional):</strong> Isi <code>PIXABAY_API_KEY</code> pada file <code>.env</code> (gratis &amp; instan di pixabay.com/api/docs) agar setiap berita saduran otomatis mendapat foto fotografi nyata yang sesuai judul dan tidak kembar. Jika kosong, sistem memakai rotasi foto stok per kategori.
         </p>
     </div>
 </div>
