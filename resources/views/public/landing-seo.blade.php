@@ -2,6 +2,7 @@
 
 @section('title', $metaTitle)
 @section('meta_description', $metaDescription)
+@section('og_image', $ogImage ?? asset('images/og-default.jpg'))
 
 @section('content')
 <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">

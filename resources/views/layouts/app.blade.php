@@ -15,11 +15,13 @@
     <meta property="og:title" content="@yield('title', 'BeritaPraktis — Portal Berita & Press Release Gratis')">
     <meta property="og:description" content="@yield('meta_description', 'Portal berita Indonesia dan platform press release gratis dengan kurasi redaksi.')">
     <meta property="og:url" content="@yield('canonical', url()->current())">
-    @hasSection('og_image')
-        <meta property="og:image" content="@yield('og_image')">
-        <meta name="twitter:image" content="@yield('og_image')">
-    @endif
+    <meta property="og:image" content="@yield('og_image', asset('images/og-default.jpg'))">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', 'BeritaPraktis — Portal Berita & Press Release Gratis')">
+    <meta name="twitter:description" content="@yield('meta_description', 'Portal berita Indonesia dan platform press release gratis dengan kurasi redaksi.')">
+    <meta name="twitter:image" content="@yield('og_image', asset('images/og-default.jpg'))">
 
     <!-- Editorial Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
