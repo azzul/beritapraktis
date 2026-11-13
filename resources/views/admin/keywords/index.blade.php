@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    @include('admin.partials.nav')
+
     <div class="flex items-center justify-between border-b border-gray-900 pb-4">
         <h1 class="font-serif text-2xl font-bold text-gray-900">Daftar Kata Kunci Terlarang (Judol / Game Online / Pornografi)</h1>
         <a href="{{ route('admin.dashboard') }}" class="text-xs font-semibold text-gray-600 hover:text-red-700">&larr; Dashboard</a>

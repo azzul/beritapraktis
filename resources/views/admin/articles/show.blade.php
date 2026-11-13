@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    @include('admin.partials.nav')
+
     <div class="mb-4">
         <a href="{{ route('admin.dashboard') }}" class="text-xs font-semibold text-gray-600 hover:text-red-700">&larr; Kembali ke Dashboard Redaksi</a>
     </div>

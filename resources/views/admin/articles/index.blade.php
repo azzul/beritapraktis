@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    @include('admin.partials.nav')
+
     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-900 pb-4">
         <h1 class="font-serif text-2xl font-bold text-gray-900">Daftar Semua Artikel</h1>
         <div class="flex flex-wrap gap-2 text-xs font-semibold">

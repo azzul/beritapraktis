@@ -4,20 +4,11 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-900 pb-4">
-        <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-red-700">Admin Redaksi</span>
-            <h1 class="font-serif text-2xl font-bold text-gray-900">Dashboard Moderasi Berita</h1>
-        </div>
-        <div class="flex flex-wrap gap-2 text-xs font-semibold">
-            <a href="{{ route('dashboard.articles.create') }}" class="rounded bg-red-700 px-3 py-2 text-white hover:bg-red-800">+ Tulis Artikel</a>
-            <a href="{{ route('admin.articles.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">Moderasi Artikel</a>
-            <a href="{{ route('admin.sadur.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">Auto-Sadur RSS</a>
-            <a href="{{ route('admin.users.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">Manage User</a>
-            <a href="{{ route('admin.seo.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">SEO &amp; Sitemap</a>
-            <a href="{{ route('admin.categories.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">Kategori</a>
-            <a href="{{ route('admin.keywords.index') }}" class="rounded border border-gray-300 bg-white px-3 py-2 hover:bg-gray-50">Kata Terlarang</a>
-        </div>
+    @include('admin.partials.nav')
+
+    <div class="border-b border-gray-900 pb-4">
+        <span class="text-xs font-bold uppercase tracking-wider text-red-700">Admin Redaksi</span>
+        <h1 class="font-serif text-2xl font-bold text-gray-900">Dashboard Moderasi Berita</h1>
     </div>
 
     <div class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
