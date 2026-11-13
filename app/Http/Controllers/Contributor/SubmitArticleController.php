@@ -96,7 +96,7 @@ class SubmitArticleController extends Controller
         }
 
         $outboundLinks = $validator->extractOutboundLinks($validated['content']);
-        if (count($outboundLinks) > $maxLinks) {
+        if (!$user->isAdmin() && count($outboundLinks) > $maxLinks) {
             throw ValidationException::withMessages([
                 'content' => "Maksimal hanya {$maxLinks} link keluar yang diperbolehkan. Saat ini terdeteksi " . count($outboundLinks) . ' link.',
             ]);

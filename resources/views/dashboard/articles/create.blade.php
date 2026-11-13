@@ -106,7 +106,7 @@
                 <!-- Rich Text Content Editor -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-900 mb-1.5">
-                        Isi Berita / Press Release (Min. 900 Kata, Maks. 2 Link) <span class="text-red-700">*</span>
+                        Isi Berita / Press Release (Min. 900 Kata, {{ auth()->user()->isAdmin() ? 'Mode Admin: Link Bebas' : 'Maks. 2 Link' }}) <span class="text-red-700">*</span>
                     </label>
                     <div id="quillEditor">{!! old('content') !!}</div>
                     <textarea id="contentInput" name="content" class="hidden">{{ old('content') }}</textarea>
@@ -197,6 +197,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const MIN_WORDS = 900;
     const MAX_LINKS = 2;
+    const IS_ADMIN = @json(auth()->user()->isAdmin());
     const BANNED_KEYWORDS = @json($bannedKeywords);
 
     const quill = new Quill('#quillEditor', {
@@ -316,15 +317,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Links
         const links = extractLinks(html, plainText);
         state.linkCount = links.length;
-        const linkOk = state.linkCount <= MAX_LINKS;
+        const linkOk = IS_ADMIN || state.linkCount <= MAX_LINKS;
         setCardState(
             'linkCheckCard', 'linkStatusTitle', 'linkCounterBadge', 'linkStatusDesc',
             linkOk,
-            '2. Maksimal 2 Link',
-            `${state.linkCount} / ${MAX_LINKS}`,
-            linkOk
-                ? `Jumlah tautan aman (${state.linkCount} dari maks ${MAX_LINKS} link).`
-                : `Terlalu banyak link! Hapus ${state.linkCount - MAX_LINKS} link lagi.`
+            IS_ADMIN ? '2. Link Keluar (Admin: Bebas)' : '2. Maksimal 2 Link',
+            IS_ADMIN ? `${state.linkCount} / Bebas` : `${state.linkCount} / ${MAX_LINKS}`,
+            IS_ADMIN
+                ? `Mode Admin aktif: terdeteksi ${state.linkCount} link keluar (bebas tanpa batas).`
+                : (linkOk
+                    ? `Jumlah tautan aman (${state.linkCount} dari maks ${MAX_LINKS} link).`
+                    : `Terlalu banyak link! Hapus ${state.linkCount - MAX_LINKS} link lagi.`)
         );
 
         // 3. Image
@@ -374,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.wordCount < MIN_WORDS) {
             problems.push(`Jumlah kata baru ${state.wordCount} kata (wajib minimal ${MIN_WORDS} kata).`);
         }
-        if (state.linkCount > MAX_LINKS) {
+        if (!IS_ADMIN && state.linkCount > MAX_LINKS) {
             problems.push(`Terdeteksi ${state.linkCount} link keluar (maksimal hanya ${MAX_LINKS} link).`);
         }
         if (!state.hasImage) {

@@ -40,7 +40,7 @@
             <div class="text-xs font-bold uppercase tracking-wider text-red-700">Syarat 02</div>
             <h2 class="mt-1 font-serif text-xl font-bold text-gray-900">Maksimal 2 Link</h2>
             <p class="mt-2 text-sm leading-relaxed text-gray-600">
-                Setiap artikel diperbolehkan menyertakan hingga 2 tautan keluar (outbound link) yang relevan, bersih, dan legal.
+                Setiap artikel diperbolehkan menyertakan hingga 2 tautan keluar (outbound link) dofollow yang relevan, bersih, dan legal.
             </p>
         </div>
         <div class="rounded-md border border-gray-200 bg-white p-5">
@@ -51,6 +51,21 @@
             </p>
         </div>
     </section>
+
+    <!-- Keunggulan Platform -->
+    @if(!empty($benefits))
+        <section class="mt-12">
+            <h2 class="font-serif text-2xl font-bold text-gray-900">Keunggulan {{ $targetKeyword }} di BeritaPraktis</h2>
+            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($benefits as $benefit)
+                    <div class="rounded-md border border-gray-200 bg-white p-5">
+                        <h3 class="text-sm font-bold text-gray-900">{{ $benefit['title'] }}</h3>
+                        <p class="mt-1.5 text-xs leading-relaxed text-gray-600">{{ $benefit['desc'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <!-- How It Works -->
     <section class="mt-12 rounded-md border border-gray-200 bg-white p-6 sm:p-8">
@@ -79,6 +94,27 @@
         </div>
     </section>
 
+    <!-- Deep SEO Editorial Sections -->
+    @if(!empty($sections))
+        <section class="mt-12 space-y-8 rounded-md border border-gray-200 bg-white p-6 sm:p-8">
+            @foreach($sections as $section)
+                <article class="space-y-3 border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+                    <h2 class="font-serif text-xl font-bold text-gray-900 sm:text-2xl">{{ $section['heading'] }}</h2>
+                    @foreach($section['paragraphs'] as $paragraph)
+                        <p class="text-sm leading-relaxed text-gray-700 sm:text-base">{{ $paragraph }}</p>
+                    @endforeach
+                    @if(!empty($section['bullets']))
+                        <ul class="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-gray-700 sm:text-base">
+                            @foreach($section['bullets'] as $bullet)
+                                <li>{{ $bullet }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </article>
+            @endforeach
+        </section>
+    @endif
+
     <!-- FAQ Section -->
     <section class="mt-12">
         <h2 class="font-serif text-2xl font-bold text-gray-900">Pertanyaan Umum ({{ $targetKeyword }})</h2>
@@ -89,6 +125,30 @@
                     <p class="mt-2 text-sm leading-relaxed text-gray-600">{{ $faq['answer'] }}</p>
                 </div>
             @endforeach
+        </div>
+    </section>
+
+    <!-- Bottom CTA & Internal Links -->
+    <section class="mt-12 rounded-md border border-gray-900 bg-gray-900 p-6 text-white sm:p-8">
+        <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+            <div>
+                <h2 class="font-serif text-2xl font-bold">Siap Mempublikasikan Artikel Anda?</h2>
+                <p class="mt-1 text-sm text-gray-300">
+                    Login pakai akun Google dan kirim berita atau press release berkualitas sekarang juga — 100% gratis.
+                </p>
+                <div class="mt-3 flex flex-wrap gap-3 text-xs text-gray-300">
+                    <a href="{{ route('seo.press-release') }}" class="underline hover:text-white">Press Release Gratis</a>
+                    <span>&bull;</span>
+                    <a href="{{ route('seo.backlink-berita') }}" class="underline hover:text-white">Backlink Berita Gratis</a>
+                    <span>&bull;</span>
+                    <a href="{{ route('seo.post-berita') }}" class="underline hover:text-white">Post Berita Gratis</a>
+                    <span>&bull;</span>
+                    <a href="{{ route('rules') }}" class="underline hover:text-white">Aturan Penulisan</a>
+                </div>
+            </div>
+            <a href="{{ route('dashboard.articles.create') }}" class="shrink-0 rounded-md bg-red-700 px-6 py-3 text-center text-sm font-bold text-white hover:bg-red-600 transition">
+                Tulis Berita Sekarang &rarr;
+            </a>
         </div>
     </section>
 </div>
