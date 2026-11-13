@@ -64,8 +64,11 @@
     <!-- Masthead Header -->
     <header class="border-b border-gray-200 bg-white sticky top-0 z-30">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-            <a href="{{ route('home') }}" class="shrink-0" aria-label="Beranda BeritaPraktis">
-                <img src="{{ asset('images/logo.svg') }}" alt="BeritaPraktis" class="h-9 w-auto">
+            <a href="{{ route('home') }}" class="shrink-0 flex flex-col" aria-label="Beranda BeritaPraktis">
+                <img src="{{ asset('images/logo.svg') }}" alt="BeritaPraktis" class="h-8 sm:h-9 w-auto">
+                <span class="mt-0.5 text-[10px] sm:text-[11px] font-medium tracking-wide text-gray-500">
+                    Portal Berita &amp; Press Release Gratis Indonesia
+                </span>
             </a>
 
             <form action="{{ route('search') }}" method="GET" class="hidden md:flex flex-1 max-w-md">
@@ -174,9 +177,16 @@
                 </div>
             </div>
 
-            <div class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-6 text-xs text-gray-500 sm:flex-row">
+            <div class="mt-8 rounded-md border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-gray-600">
+                <strong class="text-gray-900">Disclaimer &amp; Hak Cipta:</strong>
+                BeritaPraktis adalah platform publikasi berita dan press release terbuka. Sebagian besar artikel, siaran pers, dan opini dikirimkan oleh kontributor maupun disadur dengan mencantumkan sumber resmi; seluruh isi tulisan menjadi tanggung jawab penuh masing-masing penulis/pengirim dan bukan merupakan pernyataan resmi pemilik situs.
+                Apabila Anda menemukan konten, foto, atau materi yang melanggar hak cipta atau memerlukan penghapusan (takedown), silakan hubungi tim redaksi melalui email
+                <a href="mailto:info@kabarpraktis.biz.id" class="font-semibold text-red-700 underline">info@kabarpraktis.biz.id</a>.
+            </div>
+
+            <div class="mt-6 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-6 text-xs text-gray-500 sm:flex-row">
                 <p>&copy; {{ date('Y') }} BeritaPraktis. Seluruh hak cipta dilindungi.</p>
-                <p>Platform Berita &amp; Siaran Pers Terkurasi.</p>
+                <p>Kontak Redaksi &amp; Takedown: <a href="mailto:info@kabarpraktis.biz.id" class="hover:text-red-700">info@kabarpraktis.biz.id</a></p>
             </div>
         </div>
     </footer>

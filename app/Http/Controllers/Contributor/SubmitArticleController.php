@@ -28,14 +28,20 @@ class SubmitArticleController extends Controller
         return view('dashboard.articles.index', compact('articles'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
         $bannedKeywords = BannedKeyword::where('is_active', true)
             ->get(['keyword', 'category'])
             ->toArray();
 
-        return view('dashboard.articles.create', compact('categories', 'bannedKeywords'));
+        $user = $request->user();
+        $monthlyLimit = (int) config('services.beritapraktis.max_articles_per_month', 20);
+        $monthlyUsed = Article::where('user_id', $user->id)
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+
+        return view('dashboard.articles.create', compact('categories', 'bannedKeywords', 'monthlyUsed', 'monthlyLimit'));
     }
 
     public function store(
@@ -44,6 +50,20 @@ class SubmitArticleController extends Controller
         ImageOptimizationService $imageService,
         TelegramNotificationService $telegram
     ): RedirectResponse {
+        $user = $request->user();
+        $monthlyLimit = (int) config('services.beritapraktis.max_articles_per_month', 20);
+
+        if (!$user->isAdmin()) {
+            $monthlyUsed = Article::where('user_id', $user->id)
+                ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->count();
+
+            if ($monthlyUsed >= $monthlyLimit) {
+                throw ValidationException::withMessages([
+                    'title' => "Batas pengiriman artikel bulan ini sudah tercapai ({$monthlyUsed}/{$monthlyLimit} artikel). Silakan coba lagi bulan depan.",
+                ]);
+            }
+        }
         $validated = $request->validate([
             'title' => ['required', 'string', 'min:15', 'max:180'],
             'category_id' => ['required', 'exists:categories,id'],
@@ -106,8 +126,10 @@ class SubmitArticleController extends Controller
             ? $validated['excerpt']
             : Str::limit($plainText, 160);
 
+        $isDirectPublish = $user->isAdmin() && $request->boolean('publish_now');
+
         $article = Article::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'category_id' => $validated['category_id'],
             'title' => $validated['title'],
             'slug' => $slug,
@@ -119,15 +141,29 @@ class SubmitArticleController extends Controller
             'word_count' => $wordCount,
             'outbound_links_count' => count($outboundLinks),
             'outbound_links' => $outboundLinks,
-            'status' => 'pending_review',
+            'status' => $isDirectPublish ? 'published' : 'pending_review',
+            'published_at' => $isDirectPublish ? now() : null,
+            'reviewed_by' => $isDirectPublish ? $user->id : null,
+            'reviewed_at' => $isDirectPublish ? now() : null,
         ]);
 
         ModerationLog::create([
             'article_id' => $article->id,
-            'action' => 'submitted',
-            'note' => "Dikirim oleh kontributor ({$wordCount} kata, " . count($outboundLinks) . ' link).',
+            'admin_id' => $isDirectPublish ? $user->id : null,
+            'action' => $isDirectPublish ? 'approved' : 'submitted',
+            'note' => $isDirectPublish
+                ? "Diterbitkan langsung oleh Admin ({$wordCount} kata)."
+                : "Dikirim oleh kontributor ({$wordCount} kata, " . count($outboundLinks) . ' link).',
             'source' => 'web',
         ]);
+
+        if ($isDirectPublish) {
+            \App\Http\Controllers\Admin\ModerationController::clearSeoCaches();
+
+            return redirect()
+                ->route('articles.show', $article->slug)
+                ->with('success', 'Artikel berhasil diterbitkan langsung oleh Admin dan sitemap telah diperbarui.');
+        }
 
         $telegram->notifyNewSubmission($article);
 

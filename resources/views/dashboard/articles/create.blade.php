@@ -12,11 +12,22 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-    <div class="border-b border-gray-900 pb-4">
-        <h1 class="font-serif text-2xl font-bold text-gray-900 sm:text-3xl">Kirim Berita / Press Release Gratis</h1>
-        <p class="mt-1 text-sm text-gray-600">
-            Pastikan seluruh syarat wajib pada panel sebelah kanan berstatus <strong class="text-emerald-700">Hijau (Terpenuhi)</strong> sebelum mengirim.
-        </p>
+    <div class="flex flex-wrap items-end justify-between gap-3 border-b border-gray-900 pb-4">
+        <div>
+            <h1 class="font-serif text-2xl font-bold text-gray-900 sm:text-3xl">Kirim Berita / Press Release Gratis</h1>
+            <p class="mt-1 text-sm text-gray-600">
+                Pastikan seluruh syarat wajib pada panel sebelah kanan berstatus <strong class="text-emerald-700">Hijau (Terpenuhi)</strong> sebelum mengirim.
+            </p>
+        </div>
+        @if(!auth()->user()->isAdmin())
+            <div class="rounded-md border {{ $monthlyUsed >= $monthlyLimit ? 'border-red-300 bg-red-50 text-red-800' : 'border-gray-200 bg-white text-gray-700' }} px-3.5 py-2 text-xs font-semibold">
+                Kuota Bulan Ini: <span class="font-bold">{{ $monthlyUsed }} / {{ $monthlyLimit }}</span> artikel
+            </div>
+        @else
+            <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800">
+                Mode Admin Redaksi (Kuota Unlimited)
+            </div>
+        @endif
     </div>
 
     @if($errors->any())
@@ -102,7 +113,7 @@
                 </div>
 
                 <!-- Agreement Checkbox -->
-                <div class="rounded-md border border-gray-200 bg-gray-50 p-4">
+                <div class="rounded-md border border-gray-200 bg-gray-50 p-4 space-y-3">
                     <label class="flex items-start gap-2.5 text-sm text-gray-700 cursor-pointer">
                         <input type="checkbox" id="agree_rules" name="agree_rules" value="1" @checked(old('agree_rules')) required class="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-700 focus:ring-red-700">
                         <span>
@@ -110,6 +121,12 @@
                             <a href="{{ route('rules') }}" target="_blank" class="font-semibold text-red-700 underline">Aturan Penulisan BeritaPraktis</a>.
                         </span>
                     </label>
+                    @if(auth()->user()->isAdmin())
+                        <label class="flex items-center gap-2.5 border-t border-gray-200 pt-3 text-sm font-semibold text-emerald-800 cursor-pointer">
+                            <input type="checkbox" name="publish_now" value="1" checked class="h-4 w-4 rounded border-emerald-400 text-emerald-700 focus:ring-emerald-700">
+                            <span>Terbitkan Langsung (Mode Admin, tanpa antrean review)</span>
+                        </label>
+                    @endif
                 </div>
             </div>
         </div>

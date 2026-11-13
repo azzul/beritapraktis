@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AutoSadurController;
 use App\Http\Controllers\Admin\BannedKeywordController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ModerationController;
+use App\Http\Controllers\Admin\SeoController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\TelegramWebhookController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Contributor\SubmitArticleController;
@@ -70,6 +73,16 @@ Route::middleware(['auth', 'not_banned', 'admin'])
         Route::get('/kata-terlarang', [BannedKeywordController::class, 'index'])->name('keywords.index');
         Route::post('/kata-terlarang', [BannedKeywordController::class, 'store'])->name('keywords.store');
         Route::delete('/kata-terlarang/{keyword}', [BannedKeywordController::class, 'destroy'])->name('keywords.destroy');
+
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/users/{user}/ban', [AdminUserController::class, 'toggleBan'])->name('users.ban');
+        Route::post('/users/{user}/role', [AdminUserController::class, 'toggleRole'])->name('users.role');
+
+        Route::get('/seo', [SeoController::class, 'index'])->name('seo.index');
+        Route::post('/seo/regenerate', [SeoController::class, 'regenerate'])->name('seo.regenerate');
+
+        Route::get('/auto-sadur', [AutoSadurController::class, 'index'])->name('sadur.index');
+        Route::post('/auto-sadur', [AutoSadurController::class, 'import'])->name('sadur.import');
     });
 
 // Telegram Bot Webhook (CSRF-exempt in bootstrap/app.php)

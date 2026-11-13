@@ -52,6 +52,7 @@ return [
         'outbound_link_rel' => env('ARTICLE_OUTBOUND_LINK_REL', 'noopener'),
         'min_word_count' => 900,
         'max_outbound_links' => 2,
+        'max_articles_per_month' => (int) env('MAX_ARTICLES_PER_MONTH', 20),
     ],
 
 ];
