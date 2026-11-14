@@ -39,11 +39,18 @@ class AutoSadurController extends Controller
             $request->boolean('publish_now')
         );
 
-        if (!empty($result['errors'])) {
-            return back()->with('error', implode(' ', $result['errors']));
-        }
-
         $statusLabel = $request->boolean('publish_now') ? 'langsung tayang & masuk sitemap' : 'masuk antrean review';
+
+        if (!empty($result['errors'])) {
+            $errText = implode(' | ', array_unique($result['errors']));
+            if ($result['imported'] > 0) {
+                return back()
+                    ->with('success', "Auto-Sadur selesai: {$result['imported']} artikel disadur pakai template standar ({$statusLabel}), {$result['skipped']} dilewati.")
+                    ->with('error', "AI Gemini gagal: {$errText}");
+            }
+
+            return back()->with('error', $errText);
+        }
 
         return back()->with('success', "Auto-Sadur selesai: {$result['imported']} artikel baru berhasil disadur ({$statusLabel}), {$result['skipped']} dilewati (duplikat/terfilter).");
     }

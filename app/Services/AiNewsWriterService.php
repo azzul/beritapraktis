@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 class AiNewsWriterService
 {
+    private ?string $lastError = null;
+
     public function __construct(
         private ArticleValidationService $validator
     ) {}
@@ -15,6 +17,11 @@ class AiNewsWriterService
     public function isConfigured(): bool
     {
         return trim((string) config('services.gemini.key')) !== '';
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
     }
 
     /**
@@ -29,6 +36,8 @@ class AiNewsWriterService
         string $sourceUrl,
         string $categoryName
     ): ?array {
+        $this->lastError = null;
+
         $apiKey = trim((string) config('services.gemini.key'));
         if ($apiKey === '') {
             return null;
@@ -51,17 +60,32 @@ DATA SUMBER:
 
 ATURAN WAJIB:
 1. Panjang isi artikel (`content_html`) WAJIB antara 900 sampai 1100 kata.
-2. Gunakan gaya jurnalistik Indonesia yang natural, lugas, dan profesional (hindari kata-kata klise khas AI seperti "di era digital yang serba cepat", "tak dapat dipungkiri", "mari kita telusuri").
+2. Gunakan gaya jurnalistik Indonesia yang natural, lugas, dan profesional (hindari kata klise seperti "di era digital yang serba cepat", "tak dapat dipungkiri", "mari kita telusuri").
 3. JAGA ETIKA JURNALISTIK: Jangan mengarang fakta palsu, angka fiktif, atau kutipan wawancara fiktif yang tidak ada di sumber. Kembangkan artikel dengan menjelaskan konteks topik di Indonesia, latar belakang kebijakan/industri, implikasi praktis bagi masyarakat/pelaku usaha, serta hal yang perlu dicermati ke depan.
 4. Format `content_html` menggunakan HTML bersih: hanya tag `<p>`, `<h2>`, `<h3>`, `<ul>`, `<li>`, `<strong>`, `<em>`. JANGAN gunakan tag `<h1>`, `<img>`, atau `<a>` di dalam `content_html`.
 5. Sertakan minimal 4 subjudul `<h2>` yang relevan dengan isi berita.
 6. Dilarang keras mengandung konten judi online, slot, game online ilegal, atau pornografi.
-7. Berikan output HANYA dalam format JSON valid dengan field berikut:
-   - `title`: Judul berita baru yang informatif, natural, bukan clickbait (maksimal 135 karakter).
-   - `excerpt`: Ringkasan meta description SEO yang padat (120-155 karakter).
-   - `image_keywords`: 2-3 kata kunci bahasa Inggris paling akurat untuk mencari foto berita ini di Pixabay (contoh: "indonesia parliament meeting" atau "digital finance chart").
-   - `content_html`: Isi artikel lengkap dalam HTML bersih (900-1100 kata).
 PROMPT;
+
+        $generationConfig = [
+            'temperature' => 0.5,
+            'maxOutputTokens' => 8192,
+            'responseMimeType' => 'application/json',
+            'responseSchema' => [
+                'type' => 'OBJECT',
+                'properties' => [
+                    'title' => ['type' => 'STRING'],
+                    'excerpt' => ['type' => 'STRING'],
+                    'image_keywords' => ['type' => 'STRING'],
+                    'content_html' => ['type' => 'STRING'],
+                ],
+                'required' => ['title', 'excerpt', 'image_keywords', 'content_html'],
+            ],
+        ];
+
+        if (str_contains($model, '2.5')) {
+            $generationConfig['thinkingConfig'] = ['thinkingBudget' => 0];
+        }
 
         try {
             $response = Http::timeout(45)
@@ -74,35 +98,36 @@ PROMPT;
                             ],
                         ],
                     ],
-                    'generationConfig' => [
-                        'temperature' => 0.5,
-                        'responseMimeType' => 'application/json',
-                    ],
+                    'generationConfig' => $generationConfig,
                 ]);
 
             if (!$response->successful()) {
-                Log::warning('Gemini AI sadur gagal HTTP ' . $response->status(), [
-                    'body' => Str::limit($response->body(), 300),
-                ]);
+                $apiMsg = (string) data_get($response->json(), 'error.message', Str::limit($response->body(), 180));
+                $this->lastError = "Gemini HTTP {$response->status()}: {$apiMsg}";
+                Log::warning($this->lastError);
                 return null;
             }
 
             $rawText = (string) data_get($response->json(), 'candidates.0.content.parts.0.text', '');
             $rawText = trim($rawText);
             if ($rawText === '') {
+                $this->lastError = 'Gemini mengembalikan respons kosong.';
                 return null;
             }
 
-            // Strip markdown code fences if present
             $rawText = preg_replace('/^```(?:json)?\s*|\s*```$/iu', '', $rawText) ?? $rawText;
             $decoded = json_decode($rawText, true);
 
             if (!is_array($decoded) || empty($decoded['content_html'])) {
+                $this->lastError = 'Format JSON dari Gemini tidak valid (' . json_last_error_msg() . ').';
+                Log::warning($this->lastError, ['raw' => Str::limit($rawText, 300)]);
                 return null;
             }
 
             $cleanHtml = $this->validator->sanitizeContent((string) $decoded['content_html']);
-            if ($this->validator->countWords($cleanHtml) < 350) {
+            $wc = $this->validator->countWords($cleanHtml);
+            if ($wc < 350) {
+                $this->lastError = "Hasil tulisan Gemini terlalu pendek ({$wc} kata).";
                 return null;
             }
 
@@ -117,7 +142,8 @@ PROMPT;
                 'content_html' => $cleanHtml,
             ];
         } catch (\Throwable $e) {
-            Log::warning('Gemini AI sadur exception: ' . $e->getMessage());
+            $this->lastError = 'Koneksi ke Gemini gagal: ' . $e->getMessage();
+            Log::warning($this->lastError);
             return null;
         }
     }

@@ -107,6 +107,9 @@ class RssSadurService
                 $aiKeywords = $aiResult['image_keywords'];
                 $content = $aiResult['content_html'] . "\n\n" . $this->buildSourceBlockquote($sourceName, $link);
             } else {
+                if ($this->aiWriter->isConfigured() && $this->aiWriter->getLastError()) {
+                    $errors[] = $this->aiWriter->getLastError();
+                }
                 $finalTitle = Str::limit($title, 175, '');
                 $finalExcerpt = Str::limit($summary, 160);
                 $aiKeywords = '';
