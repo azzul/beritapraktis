@@ -72,13 +72,21 @@
     </form>
 
     <div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-5 text-xs text-gray-700 space-y-3">
-        <div class="flex flex-wrap gap-3">
-            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.gemini.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                AI Penulis (Gemini): {{ config('services.gemini.key') ? 'Aktif (Otomatis 900+ kata)' : 'Belum Diisi (Pakai template standar)' }}
-            </span>
-            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.pixabay.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                Foto Otomatis (Pixabay): {{ config('services.pixabay.key') ? 'Aktif' : 'Belum Diisi (Pakai rotasi stok)' }}
-            </span>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.gemini.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                    AI Penulis (Gemini): {{ config('services.gemini.key') ? 'Aktif (Otomatis 900+ kata)' : 'Belum Diisi (Pakai template standar)' }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.pixabay.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                    Foto Otomatis (Pixabay): {{ config('services.pixabay.key') ? 'Aktif' : 'Belum Diisi (Pakai rotasi stok)' }}
+                </span>
+            </div>
+            <form action="{{ route('admin.sadur.test-ai') }}" method="POST">
+                @csrf
+                <button type="submit" class="rounded border border-gray-300 bg-white px-3 py-1.5 font-semibold text-gray-800 hover:bg-gray-100 cursor-pointer">
+                    🔌 Tes Koneksi AI Gemini
+                </button>
+            </form>
         </div>
 
         <p>

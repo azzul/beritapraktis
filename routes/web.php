@@ -85,6 +85,7 @@ Route::middleware(['auth', 'not_banned', 'admin'])
 
         Route::get('/auto-sadur', [AutoSadurController::class, 'index'])->name('sadur.index');
         Route::post('/auto-sadur', [AutoSadurController::class, 'import'])->name('sadur.import');
+        Route::post('/auto-sadur/test-ai', [AutoSadurController::class, 'testAi'])->name('sadur.test-ai');
     });
 
 // Telegram Bot Webhook (CSRF-exempt in bootstrap/app.php)

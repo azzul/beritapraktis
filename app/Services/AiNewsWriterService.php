@@ -25,6 +25,53 @@ class AiNewsWriterService
     }
 
     /**
+     * Quick connection test for Admin diagnostics.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function testConnection(): array
+    {
+        $apiKey = trim((string) config('services.gemini.key'));
+        if ($apiKey === '') {
+            return [
+                'ok' => false,
+                'message' => 'GEMINI_API_KEY masih kosong. Pastikan sudah diisi di .env dan jalankan php artisan config:clear.',
+            ];
+        }
+
+        $model = trim((string) config('services.gemini.model', 'gemini-2.5-flash')) ?: 'gemini-2.5-flash';
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($endpoint, [
+                    'contents' => [
+                        ['parts' => [['text' => 'Balas dengan satu kata: OK']]],
+                    ],
+                ]);
+
+            if (!$response->successful()) {
+                $apiMsg = (string) data_get($response->json(), 'error.message', Str::limit($response->body(), 180));
+                return [
+                    'ok' => false,
+                    'message' => "Gemini HTTP {$response->status()}: {$apiMsg}",
+                ];
+            }
+
+            return [
+                'ok' => true,
+                'message' => "Koneksi Gemini AI berhasil! (Model: {$model}). Siap menulis berita 900+ kata.",
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'message' => 'Gagal menghubungi server Gemini: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Rewrite and expand an RSS news summary into a 900+ word ethical Indonesian news article.
      *
      * @return array{title: string, excerpt: string, image_keywords: string, content_html: string}|null

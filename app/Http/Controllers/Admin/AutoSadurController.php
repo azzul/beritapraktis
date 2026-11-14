@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Services\AiNewsWriterService;
 use App\Services\RssSadurService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,13 @@ class AutoSadurController extends Controller
         $presets = RssSadurService::presets();
 
         return view('admin.sadur.index', compact('categories', 'presets'));
+    }
+
+    public function testAi(AiNewsWriterService $aiWriter): RedirectResponse
+    {
+        $res = $aiWriter->testConnection();
+
+        return back()->with($res['ok'] ? 'success' : 'error', $res['message']);
     }
 
     public function import(Request $request, RssSadurService $sadur): RedirectResponse

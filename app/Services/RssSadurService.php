@@ -396,21 +396,18 @@ HTML;
         $chunks = array_chunk($sentences, max(2, (int) ceil(count($sentences) / 2)));
         $leadPara = implode(' ', $chunks[0] ?? [$summary]);
         $secondPara = isset($chunks[1]) ? '<p>' . implode(' ', $chunks[1]) . '</p>' : '';
+        $shortTopic = Str::limit($title, 70, '');
 
         return <<<HTML
 <p><strong>JAKARTA, BeritaPraktis</strong> — {$leadPara}</p>
 {$secondPara}
 
-<h2>Sorotan Utama &amp; Konteks {$categoryName}</h2>
-<p>Perkembangan terbaru mengenai <em>{$title}</em> menjadi salah satu isu penting yang mendapat perhatian luas di kanal {$categoryName}. Rangkaian informasi yang dihimpun menunjukkan adanya dinamika strategis yang berkaitan langsung dengan kepentingan publik, tata kelola kebijakan, maupun aktivitas pelaku usaha di Indonesia.</p>
-<p>Dalam penyampaian informasi kepada masyarakat, ketepatan fakta dan kejelasan rujukan sumber resmi menjadi prinsip utama agar pembaca memperoleh gambaran yang utuh, berimbang, dan terhindar dari informasi yang menyesatkan.</p>
+<h2>Latar Belakang: {$shortTopic}</h2>
+<p>Informasi mengenai {$title} menjadi sorotan utama pada kanal {$categoryName}. Perkembangan ini mencerminkan dinamika terbaru yang berdampak langsung terhadap layanan publik, aktivitas masyarakat, maupun ekosistem terkait di Indonesia.</p>
+<p>Mengacu pada laporan {$sourceName}, langkah yang ditempuh oleh pihak terkait diharapkan mampu menjawab kebutuhan di lapangan secara lebih efektif sekaligus menjaga standar pelayanan kepada masyarakat.</p>
 
-<h2>Dampak bagi Masyarakat dan Pemangku Kepentingan</h2>
-<p>Dari sisi masyarakat umum maupun praktisi di sektor terkait, setiap pembaruan dalam topik {$categoryName} membawa implikasi terhadap pengambilan keputusan sehari-hari, perencanaan kerja, hingga penyesuaian terhadap regulasi maupun tren terbaru yang sedang berkembang.</p>
-<p>Para pengamat juga menekankan pentingnya koordinasi berkelanjutan antara pihak berwenang, pelaku industri, serta komunitas agar implementasi di lapangan berjalan efektif dan memberikan manfaat nyata secara merata di berbagai daerah.</p>
-
-<h2>Panduan Lanjutan dan Sumber Resmi</h2>
-<p>Ringkasan editorial ini disusun untuk memberikan pemahaman cepat mengenai pokok persoalan, latar belakang peristiwa, serta konteks dampaknya. Pembaca disarankan untuk selalu mengikuti pembaruan berkala serta meninjau laporan lengkap dari media sumber resmi untuk detail teknis yang lebih mendalam.</p>
+<h2>Dampak dan Respons di Lapangan</h2>
+<p>Bagi masyarakat dan pemangku kepentingan di sektor {$categoryName}, pembaruan ini perlu dicermati sebagai bagian dari penyesuaian kebijakan maupun peningkatan kualitas layanan operasional. Keterbukaan informasi dan kesiapan teknis di lapangan menjadi kunci agar pelaksanaannya berjalan lancar.</p>
 
 <blockquote>
 <p><strong>Sumber Saduran Resmi:</strong> Disadur secara etis dari <a href="{$sourceUrl}" target="_blank" rel="noopener">{$sourceName}</a>. Klik tautan sumber untuk membaca laporan lengkap aslinya.</p>
