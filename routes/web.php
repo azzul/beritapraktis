@@ -89,3 +89,17 @@ Route::middleware(['auth', 'not_banned', 'admin'])
 
 // Telegram Bot Webhook (CSRF-exempt in bootstrap/app.php)
 Route::post('/api/telegram/webhook', [TelegramWebhookController::class, 'handle'])->name('api.telegram.webhook');
+
+// Fallback untuk file storage/app/public di shared hosting (cPanel) tanpa symlink
+Route::get('/storage/{path}', function (string $path) {
+    $safePath = ltrim(str_replace(['..', '\\'], ['', '/'], $path), '/');
+    $fullPath = storage_path('app/public/' . $safePath);
+
+    if (!is_file($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath, [
+        'Cache-Control' => 'public, max-age=31536000',
+    ]);
+})->where('path', '.*')->name('storage.fallback');
