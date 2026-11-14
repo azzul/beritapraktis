@@ -61,11 +61,20 @@ class AiNewsWriterService
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
             try {
-                $response = Http::timeout(15)
+                $response = Http::connectTimeout(10)
+                    ->timeout(30)
+                    ->withOptions([
+                        'curl' => [
+                            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                        ],
+                    ])
                     ->withHeaders(['Content-Type' => 'application/json'])
                     ->post($endpoint, [
                         'contents' => [
                             ['parts' => [['text' => 'Balas dengan satu kata: OK']]],
+                        ],
+                        'generationConfig' => [
+                            'maxOutputTokens' => 32,
                         ],
                     ]);
 
@@ -89,9 +98,10 @@ class AiNewsWriterService
                     'message' => $lastError,
                 ];
             } catch (\Throwable $e) {
+                $safeMsg = preg_replace('/key=[^&\s]+/', 'key=***', $e->getMessage()) ?? $e->getMessage();
                 return [
                     'ok' => false,
-                    'message' => 'Gagal menghubungi server Gemini: ' . $e->getMessage(),
+                    'message' => 'Gagal menghubungi server Gemini: ' . $safeMsg,
                 ];
             }
         }
@@ -167,7 +177,13 @@ PROMPT;
             }
 
             try {
-                $response = Http::timeout(45)
+                $response = Http::connectTimeout(10)
+                    ->timeout(60)
+                    ->withOptions([
+                        'curl' => [
+                            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                        ],
+                    ])
                     ->withHeaders(['Content-Type' => 'application/json'])
                     ->post($endpoint, [
                         'contents' => [
@@ -226,7 +242,8 @@ PROMPT;
                     'content_html' => $cleanHtml,
                 ];
             } catch (\Throwable $e) {
-                $this->lastError = 'Koneksi ke Gemini gagal: ' . $e->getMessage();
+                $safeMsg = preg_replace('/key=[^&\s]+/', 'key=***', $e->getMessage()) ?? $e->getMessage();
+                $this->lastError = 'Koneksi ke Gemini gagal: ' . $safeMsg;
                 Log::warning($this->lastError);
                 return null;
             }
