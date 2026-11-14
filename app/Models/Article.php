@@ -84,7 +84,7 @@ class Article extends Model
             return $this->featured_image;
         }
 
-        if (str_starts_with($this->featured_image, 'images/')) {
+        if (str_starts_with($this->featured_image, 'images/') || str_starts_with($this->featured_image, 'uploads/')) {
             return asset($this->featured_image);
         }
 

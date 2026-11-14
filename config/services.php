@@ -53,6 +53,7 @@ return [
         'min_word_count' => 900,
         'max_outbound_links' => 2,
         'max_articles_per_month' => (int) env('MAX_ARTICLES_PER_MONTH', 20),
+        'public_upload_path' => env('PUBLIC_UPLOAD_PATH'),
     ],
 
     'pixabay' => [

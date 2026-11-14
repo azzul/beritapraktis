@@ -71,7 +71,12 @@ class ModerationController extends Controller
         $oldImage = (string) $article->featured_image;
         $newPath = $imageService->storeFeaturedImage($request->file('featured_image'), $article->slug);
 
-        if (str_starts_with($oldImage, 'articles/') && Storage::disk('public')->exists($oldImage)) {
+        if (str_starts_with($oldImage, 'uploads/')) {
+            $oldFullPath = $imageService->getUploadRoot() . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, substr($oldImage, strlen('uploads/')));
+            if (is_file($oldFullPath)) {
+                @unlink($oldFullPath);
+            }
+        } elseif (str_starts_with($oldImage, 'articles/') && Storage::disk('public')->exists($oldImage)) {
             Storage::disk('public')->delete($oldImage);
         }
 
