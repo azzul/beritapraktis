@@ -36,8 +36,32 @@ class AiNewsWriterService
         return array_values(array_unique(array_filter([
             $configured,
             'gemini-3.8-flash',
+            'gemini-3.6-flash',
+            'gemini-3.5-flash-lite',
             'gemini-2.5-flash',
         ])));
+    }
+
+    /**
+     * Build generationConfig tailored to the target Gemini model family.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildThinkingConfig(string $model): array
+    {
+        if (str_contains($model, '3.8')) {
+            return ['thinkingLevel' => 'low'];
+        }
+
+        if (str_contains($model, '3.')) {
+            return ['thinkingLevel' => 'minimal'];
+        }
+
+        if (str_contains($model, '2.5')) {
+            return ['thinkingBudget' => 0];
+        }
+
+        return [];
     }
 
     /**
@@ -55,14 +79,22 @@ class AiNewsWriterService
             ];
         }
 
-        $lastError = 'Tidak ada model Gemini yang merespons.';
+        $errors = [];
 
         foreach ($this->getCandidateModels() as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
+            $generationConfig = [
+                'maxOutputTokens' => 256,
+            ];
+            $thinkingConfig = $this->buildThinkingConfig($model);
+            if ($thinkingConfig !== []) {
+                $generationConfig['thinkingConfig'] = $thinkingConfig;
+            }
+
             try {
-                $response = Http::connectTimeout(10)
-                    ->timeout(30)
+                $response = Http::connectTimeout(8)
+                    ->timeout(15)
                     ->withOptions([
                         'curl' => [
                             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
@@ -73,9 +105,7 @@ class AiNewsWriterService
                         'contents' => [
                             ['parts' => [['text' => 'Balas dengan satu kata: OK']]],
                         ],
-                        'generationConfig' => [
-                            'maxOutputTokens' => 32,
-                        ],
+                        'generationConfig' => $generationConfig,
                     ]);
 
                 if ($response->successful()) {
@@ -85,30 +115,28 @@ class AiNewsWriterService
                     ];
                 }
 
-                $apiMsg = (string) data_get($response->json(), 'error.message', Str::limit($response->body(), 180));
-                $lastError = "Gemini HTTP {$response->status()} ({$model}): {$apiMsg}";
+                $apiMsg = (string) data_get($response->json(), 'error.message', Str::limit($response->body(), 160));
+                $errors[] = "{$model} (HTTP {$response->status()}): {$apiMsg}";
 
-                // If model is deprecated/not found (404), try next candidate model
-                if ($response->status() === 404) {
+                // Try next model on 404 (deprecated/not found), 429 (rate limit), or 5xx (overloaded)
+                if (in_array($response->status(), [404, 429], true) || $response->status() >= 500) {
                     continue;
                 }
 
                 return [
                     'ok' => false,
-                    'message' => $lastError,
+                    'message' => "Gemini HTTP {$response->status()} ({$model}): {$apiMsg}",
                 ];
             } catch (\Throwable $e) {
                 $safeMsg = preg_replace('/key=[^&\s]+/', 'key=***', $e->getMessage()) ?? $e->getMessage();
-                return [
-                    'ok' => false,
-                    'message' => 'Gagal menghubungi server Gemini: ' . $safeMsg,
-                ];
+                $errors[] = "{$model} (timeout/koneksi): {$safeMsg}";
+                continue;
             }
         }
 
         return [
             'ok' => false,
-            'message' => $lastError,
+            'message' => 'Semua model Gemini gagal merespons: ' . implode(' | ', $errors),
         ];
     }
 
@@ -157,7 +185,6 @@ PROMPT;
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
             $generationConfig = [
-                'temperature' => 0.55,
                 'maxOutputTokens' => 8192,
                 'responseMimeType' => 'application/json',
                 'responseSchema' => [
@@ -172,13 +199,18 @@ PROMPT;
                 ],
             ];
 
-            if (str_contains($model, '2.5')) {
-                $generationConfig['thinkingConfig'] = ['thinkingBudget' => 0];
+            if (!str_contains($model, '3.')) {
+                $generationConfig['temperature'] = 0.55;
+            }
+
+            $thinkingConfig = $this->buildThinkingConfig($model);
+            if ($thinkingConfig !== []) {
+                $generationConfig['thinkingConfig'] = $thinkingConfig;
             }
 
             try {
                 $response = Http::connectTimeout(10)
-                    ->timeout(60)
+                    ->timeout(45)
                     ->withOptions([
                         'curl' => [
                             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
@@ -201,7 +233,7 @@ PROMPT;
                     $this->lastError = "Gemini HTTP {$response->status()} ({$model}): {$apiMsg}";
                     Log::warning($this->lastError);
 
-                    if ($response->status() === 404) {
+                    if (in_array($response->status(), [404, 429], true) || $response->status() >= 500) {
                         continue;
                     }
 
@@ -212,7 +244,7 @@ PROMPT;
                 $rawText = trim($rawText);
                 if ($rawText === '') {
                     $this->lastError = "Gemini ({$model}) mengembalikan respons kosong.";
-                    return null;
+                    continue;
                 }
 
                 $rawText = preg_replace('/^```(?:json)?\s*|\s*```$/iu', '', $rawText) ?? $rawText;
@@ -221,14 +253,14 @@ PROMPT;
                 if (!is_array($decoded) || empty($decoded['content_html'])) {
                     $this->lastError = "Format JSON dari Gemini ({$model}) tidak valid (" . json_last_error_msg() . ').';
                     Log::warning($this->lastError, ['raw' => Str::limit($rawText, 300)]);
-                    return null;
+                    continue;
                 }
 
                 $cleanHtml = $this->validator->sanitizeContent((string) $decoded['content_html']);
                 $wc = $this->validator->countWords($cleanHtml);
                 if ($wc < 350) {
                     $this->lastError = "Hasil tulisan Gemini ({$model}) terlalu pendek ({$wc} kata).";
-                    return null;
+                    continue;
                 }
 
                 $title = trim(strip_tags((string) ($decoded['title'] ?? $originalTitle)));
@@ -243,9 +275,9 @@ PROMPT;
                 ];
             } catch (\Throwable $e) {
                 $safeMsg = preg_replace('/key=[^&\s]+/', 'key=***', $e->getMessage()) ?? $e->getMessage();
-                $this->lastError = 'Koneksi ke Gemini gagal: ' . $safeMsg;
+                $this->lastError = "Koneksi ke Gemini ({$model}) gagal: {$safeMsg}";
                 Log::warning($this->lastError);
-                return null;
+                continue;
             }
         }
 
