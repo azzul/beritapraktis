@@ -39,9 +39,28 @@
             <div class="rounded-md border border-gray-200 bg-white p-5 space-y-4">
                 <h2 class="font-serif text-lg font-bold text-gray-900">Keputusan Redaksi</h2>
 
+                <!-- Ganti Kategori -->
+                <form action="{{ route('admin.articles.update-category', $article) }}" method="POST" class="space-y-2 border-b border-gray-100 pb-4">
+                    @csrf
+                    <label for="moderationCategorySelect" class="block text-xs font-semibold text-gray-700">Kategori Berita:</label>
+                    <div class="flex gap-2">
+                        <select id="moderationCategorySelect" name="category_id"
+                                onchange="const h = document.getElementById('approveCategoryHidden'); if (h) h.value = this.value;"
+                                class="w-full rounded-md border border-gray-300 bg-white px-2.5 py-2 text-xs font-medium text-gray-900 focus:border-gray-900 focus:outline-none">
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" @selected($article->category_id === $cat->id)>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="shrink-0 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-100 cursor-pointer">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+
                 @if($article->status !== 'published')
                     <form action="{{ route('admin.articles.approve', $article) }}" method="POST">
                         @csrf
+                        <input type="hidden" id="approveCategoryHidden" name="category_id" value="{{ $article->category_id }}">
                         <button type="submit" class="w-full rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 cursor-pointer">
                             ✅ Approve &amp; Publish Sekarang
                         </button>

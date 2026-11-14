@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\ModerationLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -29,19 +30,48 @@ class ModerationController extends Controller
     public function show(Article $article): View
     {
         $article->load(['user', 'category', 'moderationLogs.admin']);
+        $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
 
-        return view('admin.articles.show', compact('article'));
+        return view('admin.articles.show', compact('article', 'categories'));
+    }
+
+    public function updateCategory(Request $request, Article $article): RedirectResponse
+    {
+        $validated = $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+        ]);
+
+        $article->update([
+            'category_id' => $validated['category_id'],
+        ]);
+
+        if ($article->status === 'published') {
+            $this->clearSeoCaches();
+        }
+
+        return redirect()
+            ->route('admin.articles.show', $article)
+            ->with('success', 'Kategori artikel berhasil diperbarui.');
     }
 
     public function approve(Request $request, Article $article): RedirectResponse
     {
-        $article->update([
+        $updateData = [
             'status' => 'published',
             'rejection_reason' => null,
             'published_at' => $article->published_at ?? now(),
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
-        ]);
+        ];
+
+        if ($request->filled('category_id')) {
+            $validated = $request->validate([
+                'category_id' => ['exists:categories,id'],
+            ]);
+            $updateData['category_id'] = $validated['category_id'];
+        }
+
+        $article->update($updateData);
 
         ModerationLog::create([
             'article_id' => $article->id,

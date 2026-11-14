@@ -62,6 +62,7 @@ Route::middleware(['auth', 'not_banned', 'admin'])
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/artikel', [ModerationController::class, 'index'])->name('articles.index');
         Route::get('/artikel/{article}', [ModerationController::class, 'show'])->name('articles.show');
+        Route::post('/artikel/{article}/kategori', [ModerationController::class, 'updateCategory'])->name('articles.update-category');
         Route::post('/artikel/{article}/approve', [ModerationController::class, 'approve'])->name('articles.approve');
         Route::post('/artikel/{article}/reject', [ModerationController::class, 'reject'])->name('articles.reject');
         Route::post('/users/{user}/toggle-ban', [ModerationController::class, 'toggleBanUser'])->name('users.toggle-ban');
