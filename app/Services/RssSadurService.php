@@ -140,35 +140,40 @@ class RssSadurService
      */
     private function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages): array
     {
-        $query = $this->buildPhotoSearchQuery($title, $categorySlug);
+        $queries = array_values(array_unique([
+            $this->buildPhotoSearchQuery($title, $categorySlug),
+            $this->getCategoryEnglishQuery($categorySlug),
+        ]));
 
         $pixabayKey = (string) config('services.pixabay.key');
         if ($pixabayKey !== '') {
-            try {
-                $response = Http::timeout(8)->get('https://pixabay.com/api/', [
-                    'key' => $pixabayKey,
-                    'q' => $query,
-                    'image_type' => 'photo',
-                    'orientation' => 'horizontal',
-                    'safesearch' => 'true',
-                    'per_page' => 15,
-                ]);
+            foreach ($queries as $q) {
+                try {
+                    $response = Http::timeout(8)->get('https://pixabay.com/api/', [
+                        'key' => $pixabayKey,
+                        'q' => $q,
+                        'image_type' => 'photo',
+                        'orientation' => 'horizontal',
+                        'safesearch' => 'true',
+                        'per_page' => 30,
+                    ]);
 
-                if ($response->successful()) {
-                    $hits = $response->json('hits', []);
-                    foreach ($hits as $hit) {
-                        $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
-                        if ($url && !in_array($url, $usedImages, true)) {
-                            $author = trim((string) ($hit['user'] ?? 'Pixabay'));
-                            return [
-                                'url' => $url,
-                                'credit' => "Foto: {$author} / Pixabay",
-                            ];
+                    if ($response->successful()) {
+                        $hits = $response->json('hits', []);
+                        foreach ($hits as $hit) {
+                            $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
+                            if ($url && !in_array($url, $usedImages, true)) {
+                                $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                                return [
+                                    'url' => $url,
+                                    'credit' => "Foto: {$author} / Pixabay",
+                                ];
+                            }
                         }
                     }
+                } catch (\Throwable) {
+                    // Try next query or fallback
                 }
-            } catch (\Throwable) {
-                // Fallback to Pexels or curated pool below
             }
         }
 
@@ -178,9 +183,9 @@ class RssSadurService
                 $response = Http::timeout(8)
                     ->withHeaders(['Authorization' => $pexelsKey])
                     ->get('https://api.pexels.com/v1/search', [
-                        'query' => $query,
+                        'query' => $queries[0],
                         'orientation' => 'landscape',
-                        'per_page' => 15,
+                        'per_page' => 20,
                     ]);
 
                 if ($response->successful()) {
@@ -213,6 +218,7 @@ class RssSadurService
         ];
 
         $pool = $fallbackPools[$categorySlug] ?? $fallbackPools['press-release'];
+        shuffle($pool);
         foreach ($pool as $id) {
             $url = "https://images.pexels.com/photos/{$id}/pexels-photo-{$id}.jpeg?auto=compress&cs=tinysrgb&w=1200";
             if (!in_array($url, $usedImages, true)) {
@@ -223,8 +229,20 @@ class RssSadurService
             }
         }
 
-        // Rotate if all pool items were recently used
-        $randomId = $pool[array_rand($pool)];
+        // If all category pool items were used, pick from all pools combined before repeating
+        $allIds = array_merge(...array_values($fallbackPools));
+        shuffle($allIds);
+        foreach ($allIds as $id) {
+            $url = "https://images.pexels.com/photos/{$id}/pexels-photo-{$id}.jpeg?auto=compress&cs=tinysrgb&w=1200";
+            if (!in_array($url, $usedImages, true)) {
+                return [
+                    'url' => $url,
+                    'credit' => 'Foto: Pexels (Royalty-Free)',
+                ];
+            }
+        }
+
+        $randomId = $pool[0];
         return [
             'url' => "https://images.pexels.com/photos/{$randomId}/pexels-photo-{$randomId}.jpeg?auto=compress&cs=tinysrgb&w=1200",
             'credit' => 'Foto: Pexels (Royalty-Free)',
@@ -233,7 +251,33 @@ class RssSadurService
 
     private function buildPhotoSearchQuery(string $title, string $categorySlug): string
     {
-        $categoryKeywords = [
+        $lower = mb_strtolower($title);
+        $topicMap = [
+            'bencana|banjir|longsor|gempa|cuaca|hujan' => 'weather nature storm',
+            'presiden|menteri|dpr|pemerintah|politik|pilkada|kementerian' => 'government building parliament',
+            'pajak|keuangan|ekonomi|inflasi|bank|rupiah|bursa|saham|investasi' => 'finance economy chart',
+            'ekspor|impor|pelabuhan|logistik|industri|pabrik|manufaktur' => 'industry factory shipping',
+            'umkm|bisnis|perdagangan|pasar|ritel|kuliner' => 'business shop market',
+            'ai|kecerdasan buatan|digital|aplikasi|startup|teknologi|internet|siber' => 'technology computer digital',
+            'pertanian|petani|pangan|beras|panen|kebun|ternak' => 'agriculture farm harvest',
+            'pendidikan|sekolah|kampus|universitas|mahasiswa|guru|siswa' => 'university campus education',
+            'hukum|polri|kpk|kejaksaan|pengadilan|pidana|polisi|korupsi' => 'law court justice',
+            'kesehatan|rumah sakit|dokter|obat|gizi' => 'hospital healthcare medical',
+            'wisata|pariwisata|hotel|pantai|bandara|kereta|transportasi' => 'travel tourism transport',
+        ];
+
+        foreach ($topicMap as $pattern => $englishQuery) {
+            if (preg_match("/({$pattern})/u", $lower)) {
+                return $englishQuery;
+            }
+        }
+
+        return $this->getCategoryEnglishQuery($categorySlug);
+    }
+
+    private function getCategoryEnglishQuery(string $categorySlug): string
+    {
+        return match ($categorySlug) {
             'politik' => 'government parliament diplomacy',
             'bisnis-ekonomi' => 'business finance economy office',
             'teknologi' => 'technology computer server digital',
@@ -241,13 +285,8 @@ class RssSadurService
             'pendidikan' => 'education university students library',
             'hukum-kriminal' => 'law court justice legal',
             'gaya-hidup' => 'lifestyle travel health wellness',
-            'press-release' => 'conference press media corporate',
-        ];
-
-        $words = preg_split('/\s+/u', preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $title) ?? '') ?: [];
-        $keywords = array_slice(array_filter($words, fn (string $w) => mb_strlen($w) >= 5), 0, 2);
-
-        return trim(implode(' ', $keywords) . ' ' . ($categoryKeywords[$categorySlug] ?? 'news'));
+            default => 'conference press media corporate',
+        };
     }
 
     /**

@@ -7,9 +7,11 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\ModerationLog;
 use App\Models\User;
+use App\Services\ImageOptimizationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ModerationController extends Controller
@@ -52,6 +54,40 @@ class ModerationController extends Controller
         return redirect()
             ->route('admin.articles.show', $article)
             ->with('success', 'Kategori artikel berhasil diperbarui.');
+    }
+
+    public function updateImage(Request $request, Article $article, ImageOptimizationService $imageService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'featured_image' => ['required', 'file', 'mimes:png,jpeg,jpg,webp,jfif,svg', 'max:500'],
+            'image_alt' => ['nullable', 'string', 'min:3', 'max:160'],
+            'image_caption' => ['nullable', 'string', 'max:220'],
+        ], [
+            'featured_image.required' => 'Pilih file foto baru terlebih dahulu.',
+            'featured_image.mimes' => 'Format foto hanya boleh PNG, JPEG, JPG, WebP, JFIF, atau SVG.',
+            'featured_image.max' => 'Ukuran foto maksimal 500 KB.',
+        ]);
+
+        $oldImage = (string) $article->featured_image;
+        $newPath = $imageService->storeFeaturedImage($request->file('featured_image'), $article->slug);
+
+        if (str_starts_with($oldImage, 'articles/') && Storage::disk('public')->exists($oldImage)) {
+            Storage::disk('public')->delete($oldImage);
+        }
+
+        $article->update([
+            'featured_image' => $newPath,
+            'image_alt' => $validated['image_alt'] ?: $article->image_alt,
+            'image_caption' => $validated['image_caption'] ?? $article->image_caption,
+        ]);
+
+        if ($article->status === 'published') {
+            $this->clearSeoCaches();
+        }
+
+        return redirect()
+            ->route('admin.articles.show', $article)
+            ->with('success', 'Foto utama artikel berhasil diganti.');
     }
 
     public function approve(Request $request, Article $article): RedirectResponse

@@ -26,7 +26,36 @@
 
             <div class="mt-5">
                 <img src="{{ $article->image_url }}" alt="{{ $article->image_alt }}" class="max-h-96 w-full rounded border border-gray-200 object-cover">
-                <p class="mt-1.5 text-xs text-gray-500">Alt: {{ $article->image_alt }}</p>
+                <p class="mt-1.5 text-xs text-gray-500">Alt: {{ $article->image_alt }} @if($article->image_caption) &bull; {{ $article->image_caption }} @endif</p>
+
+                <details class="mt-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+                    <summary class="cursor-pointer text-xs font-bold text-gray-800 hover:text-red-700">
+                        🖼️ Ganti Foto Utama Secara Manual
+                    </summary>
+                    <form action="{{ route('admin.articles.update-image', $article) }}" method="POST" enctype="multipart/form-data" class="mt-3 space-y-3 border-t border-gray-200 pt-3">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700">Upload Foto Baru (Maks 500 KB: PNG, JPEG, JPG, WebP, JFIF, SVG)</label>
+                            <input type="file" name="featured_image" accept=".png,.jpeg,.jpg,.webp,.jfif,.svg,image/png,image/jpeg,image/webp,image/svg+xml" required
+                                   class="mt-1 block w-full text-xs text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-gray-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-red-700">
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700">Alt Text Foto</label>
+                                <input type="text" name="image_alt" value="{{ old('image_alt', $article->image_alt) }}" maxlength="160"
+                                       class="mt-1 w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700">Keterangan / Sumber Foto</label>
+                                <input type="text" name="image_caption" value="{{ old('image_caption', $article->image_caption) }}" maxlength="220"
+                                       class="mt-1 w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs">
+                            </div>
+                        </div>
+                        <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 cursor-pointer">
+                            Upload &amp; Ganti Foto
+                        </button>
+                    </form>
+                </details>
             </div>
 
             <div class="prose-editorial mt-6 border-t border-gray-100 pt-6">
