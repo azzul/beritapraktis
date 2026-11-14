@@ -88,7 +88,12 @@ class Article extends Model
             return asset($this->featured_image);
         }
 
-        return asset('storage/' . ltrim($this->featured_image, '/'));
+        $relative = ltrim($this->featured_image, '/');
+        if (is_file(public_path('storage/' . $relative))) {
+            return asset('storage/' . $relative);
+        }
+
+        return url('/media/' . $relative);
     }
 
     public function getReadingTimeMinutesAttribute(): int

@@ -91,7 +91,7 @@ Route::middleware(['auth', 'not_banned', 'admin'])
 Route::post('/api/telegram/webhook', [TelegramWebhookController::class, 'handle'])->name('api.telegram.webhook');
 
 // Fallback untuk file storage/app/public di shared hosting (cPanel) tanpa symlink
-Route::get('/storage/{path}', function (string $path) {
+$servePublicStorage = function (string $path) {
     $safePath = ltrim(str_replace(['..', '\\'], ['', '/'], $path), '/');
     $fullPath = storage_path('app/public/' . $safePath);
 
@@ -102,4 +102,7 @@ Route::get('/storage/{path}', function (string $path) {
     return response()->file($fullPath, [
         'Cache-Control' => 'public, max-age=31536000',
     ]);
-})->where('path', '.*')->name('storage.fallback');
+};
+
+Route::get('/media/{path}', $servePublicStorage)->where('path', '.*')->name('media.serve');
+Route::get('/storage/{path}', $servePublicStorage)->where('path', '.*')->name('storage.fallback');
