@@ -96,7 +96,7 @@ class RssSadurService
             $photo = $this->fetchUniquePhoto($title, $category->slug, $usedImages);
             $usedImages[] = $photo['url'];
 
-            $summary = $desc !== '' ? Str::limit($desc, 420) : "Ringkasan informasi terkini mengenai {$title}.";
+            $summary = $desc !== '' ? Str::limit($desc, 1500) : "Ringkasan informasi terkini mengenai {$title}.";
             $content = $this->buildSaduranContent($title, $summary, $sourceName, $link, $category->name);
             $wordCount = $this->validator->countWords($content);
             $outboundLinks = $this->validator->extractOutboundLinks($content);
@@ -303,10 +303,15 @@ class RssSadurService
             $xml = @simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
             if ($xml && isset($xml->channel->item)) {
                 foreach ($xml->channel->item as $node) {
+                    $contentNs = $node->children('content', true);
+                    $encoded = isset($contentNs->encoded) ? (string) $contentNs->encoded : '';
+                    $rawDesc = (string) ($node->description ?? '');
+                    $bestDesc = mb_strlen(strip_tags($encoded)) > mb_strlen(strip_tags($rawDesc)) ? $encoded : $rawDesc;
+
                     $items[] = [
                         'title' => (string) ($node->title ?? ''),
                         'link' => (string) ($node->link ?? ''),
-                        'description' => (string) ($node->description ?? ''),
+                        'description' => $bestDesc,
                     ];
                     if (count($items) >= $limit) {
                         break;
@@ -321,11 +326,14 @@ class RssSadurService
             foreach (array_slice($matches[1], 0, $limit) as $block) {
                 $title = $this->extractTag($block, 'title');
                 $link = $this->extractTag($block, 'link');
-                $desc = $this->extractTag($block, 'description');
+                $encoded = $this->extractTag($block, 'content:encoded');
+                $rawDesc = $this->extractTag($block, 'description');
+                $bestDesc = mb_strlen(strip_tags($encoded)) > mb_strlen(strip_tags($rawDesc)) ? $encoded : $rawDesc;
+
                 $items[] = [
                     'title' => $title,
                     'link' => $link,
-                    'description' => $desc,
+                    'description' => $bestDesc,
                 ];
             }
         }
@@ -335,7 +343,8 @@ class RssSadurService
 
     private function extractTag(string $block, string $tag): string
     {
-        if (preg_match("/<{$tag}[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/{$tag}>/isu", $block, $m)) {
+        $escaped = preg_quote($tag, '/');
+        if (preg_match("/<{$escaped}[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/{$escaped}>/isu", $block, $m)) {
             return trim($m[1]);
         }
         return '';
@@ -343,15 +352,25 @@ class RssSadurService
 
     private function buildSaduranContent(string $title, string $summary, string $sourceName, string $sourceUrl, string $categoryName): string
     {
+        $sentences = preg_split('/(?<=[.!?])\s+/u', trim($summary)) ?: [$summary];
+        $chunks = array_chunk($sentences, max(2, (int) ceil(count($sentences) / 2)));
+        $leadPara = implode(' ', $chunks[0] ?? [$summary]);
+        $secondPara = isset($chunks[1]) ? '<p>' . implode(' ', $chunks[1]) . '</p>' : '';
+
         return <<<HTML
-<p><strong>JAKARTA, BeritaPraktis</strong> — {$summary}</p>
+<p><strong>JAKARTA, BeritaPraktis</strong> — {$leadPara}</p>
+{$secondPara}
 
 <h2>Sorotan Utama &amp; Konteks {$categoryName}</h2>
-<p>Perkembangan terbaru terkait <em>{$title}</em> menjadi topik yang mendapat perhatian luas di kanal {$categoryName}. Informasi awal yang dihimpun menunjukkan adanya dinamika penting yang relevan bagi pembaca maupun pelaku industri di Indonesia.</p>
-<p>Dalam penyampaian informasi publik, ketepatan fakta dan rujukan sumber resmi menjadi prinsip utama agar masyarakat memperoleh gambaran yang berimbang dan terhindar dari disinformasi.</p>
+<p>Perkembangan terbaru mengenai <em>{$title}</em> menjadi salah satu isu penting yang mendapat perhatian luas di kanal {$categoryName}. Rangkaian informasi yang dihimpun menunjukkan adanya dinamika strategis yang berkaitan langsung dengan kepentingan publik, tata kelola kebijakan, maupun aktivitas pelaku usaha di Indonesia.</p>
+<p>Dalam penyampaian informasi kepada masyarakat, ketepatan fakta dan kejelasan rujukan sumber resmi menjadi prinsip utama agar pembaca memperoleh gambaran yang utuh, berimbang, dan terhindar dari informasi yang menyesatkan.</p>
 
-<h2>Implikasi bagi Pembaca</h2>
-<p>Ringkasan ini disusun untuk memberikan pemahaman cepat mengenai pokok persoalan, latar belakang kebijakan, serta potensi dampaknya bagi aktivitas masyarakat sehari-hari. Pembaca disarankan untuk selalu mengikuti pembaruan lanjutan dari sumber-sumber tepercaya.</p>
+<h2>Dampak bagi Masyarakat dan Pemangku Kepentingan</h2>
+<p>Dari sisi masyarakat umum maupun praktisi di sektor terkait, setiap pembaruan dalam topik {$categoryName} membawa implikasi terhadap pengambilan keputusan sehari-hari, perencanaan kerja, hingga penyesuaian terhadap regulasi maupun tren terbaru yang sedang berkembang.</p>
+<p>Para pengamat juga menekankan pentingnya koordinasi berkelanjutan antara pihak berwenang, pelaku industri, serta komunitas agar implementasi di lapangan berjalan efektif dan memberikan manfaat nyata secara merata di berbagai daerah.</p>
+
+<h2>Panduan Lanjutan dan Sumber Resmi</h2>
+<p>Ringkasan editorial ini disusun untuk memberikan pemahaman cepat mengenai pokok persoalan, latar belakang peristiwa, serta konteks dampaknya. Pembaca disarankan untuk selalu mengikuti pembaruan berkala serta meninjau laporan lengkap dari media sumber resmi untuk detail teknis yang lebih mendalam.</p>
 
 <blockquote>
 <p><strong>Sumber Saduran Resmi:</strong> Disadur secara etis dari <a href="{$sourceUrl}" target="_blank" rel="noopener">{$sourceName}</a>. Klik tautan sumber untuk membaca laporan lengkap aslinya.</p>
