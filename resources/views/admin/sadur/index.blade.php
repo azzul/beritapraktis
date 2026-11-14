@@ -71,13 +71,25 @@
         </button>
     </form>
 
-    <div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600 space-y-2">
+    <div class="mt-6 rounded-md border border-gray-200 bg-gray-50 p-5 text-xs text-gray-700 space-y-3">
+        <div class="flex flex-wrap gap-3">
+            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.gemini.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                AI Penulis (Gemini): {{ config('services.gemini.key') ? 'Aktif (Otomatis 900+ kata)' : 'Belum Diisi (Pakai template standar)' }}
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold {{ config('services.pixabay.key') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                Foto Otomatis (Pixabay): {{ config('services.pixabay.key') ? 'Aktif' : 'Belum Diisi (Pakai rotasi stok)' }}
+            </span>
+        </div>
+
         <p>
-            <strong>Otomatisasi Harian (Cron / Task Scheduler):</strong> Anda juga dapat menjadwalkan perintah
-            <code>php artisan news:auto-sadur --limit=3 --publish</code> di server hosting/VPS agar portal terisi berita terupdate setiap hari secara otomatis.
+            <strong>Otomatisasi Harian 5 Berita / Hari (cPanel Cron Jobs):</strong><br>
+            Pasang perintah berikut di menu <strong>Cron Jobs</strong> cPanel (misal setiap hari jam 07:00):<br>
+            <code class="mt-1 inline-block rounded bg-gray-900 px-2.5 py-1 text-[11px] text-white">/usr/local/bin/php /home/azolatek/beritapraktis/artisan news:auto-sadur --total=5 --limit=2 --publish</code>
         </p>
         <p>
-            <strong>Foto Otomatis Unik (Opsional):</strong> Isi <code>PIXABAY_API_KEY</code> pada file <code>.env</code> (gratis &amp; instan di pixabay.com/api/docs) agar setiap berita saduran otomatis mendapat foto fotografi nyata yang sesuai judul dan tidak kembar. Jika kosong, sistem memakai rotasi foto stok per kategori.
+            <strong>Konfigurasi Opsional di <code>.env</code>:</strong><br>
+            &bull; <code>GEMINI_API_KEY</code> (gratis di aistudio.google.com) agar AI merangkum dan mengembangkan setiap berita menjadi 900+ kata.<br>
+            &bull; <code>PIXABAY_API_KEY</code> (gratis di pixabay.com/api/docs) agar setiap berita mendapat foto unik yang relevan.
         </p>
     </div>
 </div>

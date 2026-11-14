@@ -11,7 +11,8 @@ use Illuminate\Support\Str;
 class RssSadurService
 {
     public function __construct(
-        private ArticleValidationService $validator
+        private ArticleValidationService $validator,
+        private AiNewsWriterService $aiWriter
     ) {}
 
     /**
@@ -81,8 +82,12 @@ class RssSadurService
                 continue;
             }
 
-            $slug = Str::slug($title);
-            if (Article::withTrashed()->where('slug', $slug)->exists()) {
+            $origSlug = Str::slug($title);
+            if (
+                Article::withTrashed()
+                    ->where(fn ($q) => $q->where('slug', $origSlug)->orWhere('content', 'like', "%{$link}%"))
+                    ->exists()
+            ) {
                 $skipped++;
                 continue;
             }
@@ -93,23 +98,45 @@ class RssSadurService
                 continue;
             }
 
-            $photo = $this->fetchUniquePhoto($title, $category->slug, $usedImages);
+            $summary = $desc !== '' ? Str::limit($desc, 1500) : "Ringkasan informasi terkini mengenai {$title}.";
+            $aiResult = $this->aiWriter->rewriteAndExpand($title, $summary, $sourceName, $link, $category->name);
+
+            if ($aiResult && empty($this->validator->findBannedKeywords($aiResult['title'], $aiResult['content_html'], [$link]))) {
+                $finalTitle = $aiResult['title'];
+                $finalExcerpt = $aiResult['excerpt'];
+                $aiKeywords = $aiResult['image_keywords'];
+                $content = $aiResult['content_html'] . "\n\n" . $this->buildSourceBlockquote($sourceName, $link);
+            } else {
+                $finalTitle = Str::limit($title, 175, '');
+                $finalExcerpt = Str::limit($summary, 160);
+                $aiKeywords = '';
+                $content = $this->buildSaduranContent($title, $summary, $sourceName, $link, $category->name);
+            }
+
+            // Ensure unique slug even if AI rewrites title
+            $slugBase = Str::slug($finalTitle) ?: $origSlug;
+            $slug = $slugBase;
+            $counter = 2;
+            while (Article::withTrashed()->where('slug', $slug)->exists()) {
+                $slug = "{$slugBase}-{$counter}";
+                $counter++;
+            }
+
+            $photo = $this->fetchUniquePhoto($finalTitle, $category->slug, $usedImages, $aiKeywords);
             $usedImages[] = $photo['url'];
 
-            $summary = $desc !== '' ? Str::limit($desc, 1500) : "Ringkasan informasi terkini mengenai {$title}.";
-            $content = $this->buildSaduranContent($title, $summary, $sourceName, $link, $category->name);
             $wordCount = $this->validator->countWords($content);
             $outboundLinks = $this->validator->extractOutboundLinks($content);
 
             Article::create([
                 'user_id' => $author->id,
                 'category_id' => $category->id,
-                'title' => Str::limit($title, 175, ''),
+                'title' => $finalTitle,
                 'slug' => $slug,
-                'excerpt' => Str::limit($summary, 160),
+                'excerpt' => $finalExcerpt,
                 'content' => $content,
                 'featured_image' => $photo['url'],
-                'image_alt' => 'Foto editorial: ' . Str::limit($title, 120, ''),
+                'image_alt' => 'Foto editorial: ' . Str::limit($finalTitle, 120, ''),
                 'image_caption' => "{$photo['credit']} | Sumber saduran: {$sourceName}",
                 'word_count' => $wordCount,
                 'outbound_links_count' => count($outboundLinks),
@@ -138,12 +165,13 @@ class RssSadurService
      * @param list<string> $usedImages
      * @return array{url: string, credit: string}
      */
-    private function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages): array
+    private function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages, string $aiKeywords = ''): array
     {
-        $queries = array_values(array_unique([
+        $queries = array_values(array_unique(array_filter([
+            trim($aiKeywords),
             $this->buildPhotoSearchQuery($title, $categorySlug),
             $this->getCategoryEnglishQuery($categorySlug),
-        ]));
+        ])));
 
         $pixabayKey = (string) config('services.pixabay.key');
         if ($pixabayKey !== '') {
@@ -348,6 +376,15 @@ class RssSadurService
             return trim($m[1]);
         }
         return '';
+    }
+
+    private function buildSourceBlockquote(string $sourceName, string $sourceUrl): string
+    {
+        return <<<HTML
+<blockquote>
+<p><strong>Sumber Saduran Resmi:</strong> Disadur secara etis dari <a href="{$sourceUrl}" target="_blank" rel="noopener">{$sourceName}</a>. Klik tautan sumber untuk membaca laporan lengkap aslinya.</p>
+</blockquote>
+HTML;
     }
 
     private function buildSaduranContent(string $title, string $summary, string $sourceName, string $sourceUrl, string $categoryName): string
