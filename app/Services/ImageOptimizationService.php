@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class ImageOptimizationService
@@ -57,31 +58,11 @@ class ImageOptimizationService
             return "uploads/{$subDir}/{$fileName}";
         }
 
-        if (function_exists('imagewebp') && function_exists('imagecreatefromstring')) {
-            $raw = file_get_contents($file->getRealPath());
-            $src = $raw !== false ? @imagecreatefromstring($raw) : false;
-
-            if ($src !== false) {
-                $origW = imagesx($src);
-                $origH = imagesy($src);
-                $maxW = 1200;
-
-                if ($origW > $maxW) {
-                    $newW = $maxW;
-                    $newH = (int) round(($origH / $origW) * $newW);
-                    $dst = imagecreatetruecolor($newW, $newH);
-                    imagealphablending($dst, false);
-                    imagesavealpha($dst, true);
-                    imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
-                    imagedestroy($src);
-                    $src = $dst;
-                }
-
-                $fileName = "{$baseName}.webp";
-                imagewebp($src, $targetDir . DIRECTORY_SEPARATOR . $fileName, 82);
-                imagedestroy($src);
-
-                return "uploads/{$subDir}/{$fileName}";
+        $raw = file_get_contents($file->getRealPath());
+        if ($raw !== false) {
+            $webpPath = $this->saveAsWebp($raw, $targetDir, $subDir, $baseName);
+            if ($webpPath !== null) {
+                return $webpPath;
             }
         }
 
@@ -91,5 +72,98 @@ class ImageOptimizationService
         $file->move($targetDir, $fileName);
 
         return "uploads/{$subDir}/{$fileName}";
+    }
+
+    /**
+     * Download an external image URL (such as temporary Pixabay links) and store it locally so it never expires.
+     */
+    public function storeFromUrl(string $imageUrl, string $slugHint): ?string
+    {
+        if (trim($imageUrl) === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::connectTimeout(8)
+                ->timeout(15)
+                ->withHeaders(['User-Agent' => 'BeritaPraktisBot/1.0'])
+                ->get($imageUrl);
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $raw = $response->body();
+            if (strlen($raw) < 1024) {
+                return null;
+            }
+
+            $subDir = 'articles/' . now()->format('Y/m');
+            $baseName = (Str::slug(Str::limit($slugHint, 50, '')) ?: 'artikel') . '-' . Str::random(6);
+
+            $uploadRoot = $this->getUploadRoot();
+            $targetDir = $uploadRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $subDir);
+            if (!is_dir($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
+            $webpPath = $this->saveAsWebp($raw, $targetDir, $subDir, $baseName);
+            if ($webpPath !== null) {
+                return $webpPath;
+            }
+
+            // Fallback if GD/WebP is unavailable: verify it's an image MIME before saving raw
+            $contentType = strtolower((string) $response->header('Content-Type'));
+            $ext = match (true) {
+                str_contains($contentType, 'png') => 'png',
+                str_contains($contentType, 'webp') => 'webp',
+                str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+                default => null,
+            };
+
+            if ($ext === null) {
+                return null;
+            }
+
+            $fileName = "{$baseName}.{$ext}";
+            file_put_contents($targetDir . DIRECTORY_SEPARATOR . $fileName, $raw);
+
+            return "uploads/{$subDir}/{$fileName}";
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function saveAsWebp(string $raw, string $targetDir, string $subDir, string $baseName): ?string
+    {
+        if (!function_exists('imagewebp') || !function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $src = @imagecreatefromstring($raw);
+        if ($src === false) {
+            return null;
+        }
+
+        $origW = imagesx($src);
+        $origH = imagesy($src);
+        $maxW = 1200;
+
+        if ($origW > $maxW) {
+            $newW = $maxW;
+            $newH = (int) round(($origH / $origW) * $newW);
+            $dst = imagecreatetruecolor($newW, $newH);
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+            imagedestroy($src);
+            $src = $dst;
+        }
+
+        $fileName = "{$baseName}.webp";
+        $saved = imagewebp($src, $targetDir . DIRECTORY_SEPARATOR . $fileName, 82);
+        imagedestroy($src);
+
+        return $saved ? "uploads/{$subDir}/{$fileName}" : null;
     }
 }

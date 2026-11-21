@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\ArticleValidationService;
+use App\Services\ImageOptimizationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -70,7 +71,7 @@ class ClientBacklinkSeeder extends Seeder
 
             $categoryId = $categories[$item['category']] ?? $categories->first();
             $pixabayPhoto = $pixabayKey !== ''
-                ? $this->fetchPixabayPhoto($pixabayKey, $item['pixabay_query'], $usedUrls)
+                ? $this->fetchPixabayPhoto($pixabayKey, $item['pixabay_query'], $usedUrls, $slug)
                 : null;
 
             if ($pixabayPhoto) {
@@ -115,7 +116,7 @@ class ClientBacklinkSeeder extends Seeder
      * @param list<string> $usedUrls
      * @return array{url: string, credit: string}|null
      */
-    private function fetchPixabayPhoto(string $apiKey, string $query, array $usedUrls): ?array
+    private function fetchPixabayPhoto(string $apiKey, string $query, array $usedUrls, string $slugHint): ?array
     {
         try {
             $response = Http::timeout(8)->get('https://pixabay.com/api/', [
@@ -128,14 +129,18 @@ class ClientBacklinkSeeder extends Seeder
             ]);
 
             if ($response->successful()) {
+                $imageService = app(ImageOptimizationService::class);
                 foreach ($response->json('hits', []) as $hit) {
                     $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
                     if ($url && !in_array($url, $usedUrls, true)) {
-                        $author = trim((string) ($hit['user'] ?? 'Pixabay'));
-                        return [
-                            'url' => $url,
-                            'credit' => "Foto: {$author} / Pixabay",
-                        ];
+                        $localPath = $imageService->storeFromUrl($url, $slugHint);
+                        if ($localPath !== null) {
+                            $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                            return [
+                                'url' => $localPath,
+                                'credit' => "Foto: {$author} / Pixabay",
+                            ];
+                        }
                     }
                 }
             }

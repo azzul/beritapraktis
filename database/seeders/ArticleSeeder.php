@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\ArticleValidationService;
+use App\Services\ImageOptimizationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -433,7 +434,7 @@ class ArticleSeeder extends Seeder
             $categoryPhotoCounter[$catSlug] = $catPos + 1;
 
             $pixabayPhoto = $pixabayKey !== ''
-                ? $this->fetchPixabayPhoto($pixabayKey, $item['title'], $catSlug, $usedUrls)
+                ? $this->fetchPixabayPhoto($pixabayKey, $item['title'], $catSlug, $usedUrls, $slug)
                 : null;
 
             if ($pixabayPhoto) {
@@ -486,9 +487,10 @@ class ArticleSeeder extends Seeder
      * @param list<string> $usedUrls
      * @return array{url: string, credit: string}|null
      */
-    private function fetchPixabayPhoto(string $apiKey, string $title, string $catSlug, array $usedUrls): ?array
+    private function fetchPixabayPhoto(string $apiKey, string $title, string $catSlug, array $usedUrls, string $slugHint = ''): ?array
     {
         $query = $this->buildPixabayQuery($title, $catSlug);
+        $hint = $slugHint !== '' ? $slugHint : $title;
 
         try {
             $response = Http::timeout(8)->get('https://pixabay.com/api/', [
@@ -501,14 +503,18 @@ class ArticleSeeder extends Seeder
             ]);
 
             if ($response->successful()) {
+                $imageService = app(ImageOptimizationService::class);
                 foreach ($response->json('hits', []) as $hit) {
                     $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
                     if ($url && !in_array($url, $usedUrls, true)) {
-                        $author = trim((string) ($hit['user'] ?? 'Pixabay'));
-                        return [
-                            'url' => $url,
-                            'credit' => "Foto: {$author} / Pixabay",
-                        ];
+                        $localPath = $imageService->storeFromUrl($url, $hint);
+                        if ($localPath !== null) {
+                            $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                            return [
+                                'url' => $localPath,
+                                'credit' => "Foto: {$author} / Pixabay",
+                            ];
+                        }
                     }
                 }
             }

@@ -12,7 +12,8 @@ class RssSadurService
 {
     public function __construct(
         private ArticleValidationService $validator,
-        private AiNewsWriterService $aiWriter
+        private AiNewsWriterService $aiWriter,
+        private ImageOptimizationService $imageService
     ) {}
 
     /**
@@ -125,7 +126,7 @@ class RssSadurService
                 $counter++;
             }
 
-            $photo = $this->fetchUniquePhoto($finalTitle, $category->slug, $usedImages, $aiKeywords);
+            $photo = $this->fetchUniquePhoto($finalTitle, $category->slug, $usedImages, $aiKeywords, $slug);
             $usedImages[] = $photo['url'];
 
             $wordCount = $this->validator->countWords($content);
@@ -168,8 +169,9 @@ class RssSadurService
      * @param list<string> $usedImages
      * @return array{url: string, credit: string}
      */
-    private function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages, string $aiKeywords = ''): array
+    public function fetchUniquePhoto(string $title, string $categorySlug, array $usedImages, string $aiKeywords = '', string $slugHint = ''): array
     {
+        $hint = $slugHint !== '' ? $slugHint : $title;
         $queries = array_values(array_unique(array_filter([
             trim($aiKeywords),
             $this->buildPhotoSearchQuery($title, $categorySlug),
@@ -191,14 +193,19 @@ class RssSadurService
 
                     if ($response->successful()) {
                         $hits = $response->json('hits', []);
+                        shuffle($hits);
                         foreach ($hits as $hit) {
                             $url = $hit['largeImageURL'] ?? $hit['webformatURL'] ?? null;
                             if ($url && !in_array($url, $usedImages, true)) {
-                                $author = trim((string) ($hit['user'] ?? 'Pixabay'));
-                                return [
-                                    'url' => $url,
-                                    'credit' => "Foto: {$author} / Pixabay",
-                                ];
+                                // Pixabay /get/ URLs expire in 24h — MUST download & save locally
+                                $localPath = $this->imageService->storeFromUrl($url, $hint);
+                                if ($localPath !== null) {
+                                    $author = trim((string) ($hit['user'] ?? 'Pixabay'));
+                                    return [
+                                        'url' => $localPath,
+                                        'credit' => "Foto: {$author} / Pixabay",
+                                    ];
+                                }
                             }
                         }
                     }
@@ -224,9 +231,10 @@ class RssSadurService
                     foreach ($photos as $photo) {
                         $url = $photo['src']['large'] ?? $photo['src']['medium'] ?? null;
                         if ($url && !in_array($url, $usedImages, true)) {
+                            $localPath = $this->imageService->storeFromUrl($url, $hint);
                             $photographer = trim((string) ($photo['photographer'] ?? 'Pexels'));
                             return [
-                                'url' => $url,
+                                'url' => $localPath ?? $url,
                                 'credit' => "Foto: {$photographer} / Pexels",
                             ];
                         }
@@ -253,8 +261,9 @@ class RssSadurService
         foreach ($pool as $id) {
             $url = "https://images.pexels.com/photos/{$id}/pexels-photo-{$id}.jpeg?auto=compress&cs=tinysrgb&w=1200";
             if (!in_array($url, $usedImages, true)) {
+                $localPath = $this->imageService->storeFromUrl($url, $hint);
                 return [
-                    'url' => $url,
+                    'url' => $localPath ?? $url,
                     'credit' => 'Foto: Pexels (Royalty-Free)',
                 ];
             }
@@ -266,16 +275,19 @@ class RssSadurService
         foreach ($allIds as $id) {
             $url = "https://images.pexels.com/photos/{$id}/pexels-photo-{$id}.jpeg?auto=compress&cs=tinysrgb&w=1200";
             if (!in_array($url, $usedImages, true)) {
+                $localPath = $this->imageService->storeFromUrl($url, $hint);
                 return [
-                    'url' => $url,
+                    'url' => $localPath ?? $url,
                     'credit' => 'Foto: Pexels (Royalty-Free)',
                 ];
             }
         }
 
         $randomId = $pool[0];
+        $url = "https://images.pexels.com/photos/{$randomId}/pexels-photo-{$randomId}.jpeg?auto=compress&cs=tinysrgb&w=1200";
+        $localPath = $this->imageService->storeFromUrl($url, $hint);
         return [
-            'url' => "https://images.pexels.com/photos/{$randomId}/pexels-photo-{$randomId}.jpeg?auto=compress&cs=tinysrgb&w=1200",
+            'url' => $localPath ?? $url,
             'credit' => 'Foto: Pexels (Royalty-Free)',
         ];
     }
