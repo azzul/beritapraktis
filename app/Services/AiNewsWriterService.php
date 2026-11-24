@@ -172,7 +172,7 @@ DATA SUMBER:
 - URL Sumber: {$sourceUrl}
 
 ATURAN WAJIB:
-1. Buat `title` (judul berita) yang tajam, menarik minat klik pembaca secara natural, dan mengandung kata kunci utama topik (maksimal 12 kata, hindari clickbait berlebihan atau kebohongan).
+1. Buat `title` (judul berita) bergaya media online populer yang memiliki unsur **clickbait elegan / memancing rasa penasaran tinggi (high-CTR)** agar pembaca tertarik mengklik—misalnya menyoroti dampak mengejutkan, fakta kunci, atau frasa pemicu seperti "Ternyata Ini...", "Siap-Siap!", "Ini Dampaknya bagi...", atau "Fakta Baru di Balik..."—namun tetap akurat sesuai isi berita (maksimal 13 kata, dilarang berbohong/hoaks) dan mengandung kata kunci utama topik.
 2. Panjang isi artikel (`content_html`) WAJIB antara 900 sampai 1100 kata.
 3. Gunakan gaya jurnalistik Indonesia yang mengalir, lugas, dan profesional (hindari kata klise seperti "di era digital yang serba cepat", "tak dapat dipungkiri", "mari kita telusuri").
 4. JAGA ETIKA JURNALISTIK: Jangan mengarang fakta palsu, angka fiktif, atau kutipan wawancara fiktif yang tidak ada di sumber. Kembangkan artikel dengan menjelaskan konteks topik di Indonesia, latar belakang kebijakan/industri, implikasi praktis bagi masyarakat/pelaku usaha, serta hal yang perlu dicermati ke depan.
