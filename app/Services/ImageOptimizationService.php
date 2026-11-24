@@ -134,6 +134,43 @@ class ImageOptimizationService
         }
     }
 
+    /**
+     * Optimize and copy a local image file (e.g. from public/images/seed) into public uploads/articles/YYYY/MM/.
+     */
+    public function storeFromLocalFile(string $localFilePath, string $slugHint): ?string
+    {
+        if (!is_file($localFilePath)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($localFilePath);
+        if ($raw === false || strlen($raw) < 1024) {
+            return null;
+        }
+
+        $subDir = 'articles/' . now()->format('Y/m');
+        $baseName = (Str::slug(Str::limit($slugHint, 50, '')) ?: 'artikel') . '-' . Str::random(6);
+
+        $uploadRoot = $this->getUploadRoot();
+        $targetDir = $uploadRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $subDir);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+
+        $webpPath = $this->saveAsWebp($raw, $targetDir, $subDir, $baseName);
+        if ($webpPath !== null) {
+            return $webpPath;
+        }
+
+        $ext = strtolower(pathinfo($localFilePath, PATHINFO_EXTENSION) ?: 'jpg');
+        $fileName = "{$baseName}.{$ext}";
+        if (@copy($localFilePath, $targetDir . DIRECTORY_SEPARATOR . $fileName)) {
+            return "uploads/{$subDir}/{$fileName}";
+        }
+
+        return null;
+    }
+
     private function saveAsWebp(string $raw, string $targetDir, string $subDir, string $baseName): ?string
     {
         if (!function_exists('imagewebp') || !function_exists('imagecreatefromstring')) {
