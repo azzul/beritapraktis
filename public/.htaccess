@@ -5,6 +5,17 @@
 
     RewriteEngine On
 
+    # Redirect mail.* dan www.* ke domain utama HTTPS (kecuali .well-known untuk AutoSSL cPanel)
+    RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+    RewriteCond %{HTTP_HOST} ^(mail|www)\.(.+)$ [NC]
+    RewriteRule ^(.*)$ https://%2/$1 [L,R=301]
+
+    # Paksa HTTPS untuk domain utama (mendukung reverse proxy / Cloudflare via X-Forwarded-Proto)
+    RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\Admin\ModerationController;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\RssSadurService;
@@ -45,6 +46,10 @@ class FetchRssNewsCommand extends Command
             $res = $sadur->importFromFeed($preset['url'], $preset['name'], $category, $author, $remaining, $publish);
             $totalImported += $res['imported'];
             $this->info("[{$preset['name']}] Imported: {$res['imported']}, Skipped: {$res['skipped']}");
+        }
+
+        if ($publish && $totalImported > 0) {
+            ModerationController::clearSeoCaches();
         }
 
         $this->info("Total artikel baru disadur: {$totalImported}");

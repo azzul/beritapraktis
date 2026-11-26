@@ -2,6 +2,10 @@
 
 @section('title', "Hasil Pencarian: {$q} | BeritaPraktis")
 
+@push('head')
+    <meta name="robots" content="noindex, follow">
+@endpush
+
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
     <header class="border-b border-gray-900 pb-4">

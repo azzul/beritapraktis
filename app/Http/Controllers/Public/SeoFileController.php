@@ -21,6 +21,7 @@ Disallow: /admin
 Disallow: /dashboard
 Disallow: /api
 Disallow: /login
+Disallow: /cari
 
 User-agent: Googlebot-News
 Allow: /
