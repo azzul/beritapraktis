@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\TelegramWebhookController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Contributor\SubmitArticleController;
 use App\Http\Controllers\Public\ArticleController;
+use App\Http\Controllers\Public\EditorialPageController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\LandingSeoController;
 use App\Http\Controllers\Public\SeoFileController;
@@ -27,6 +28,13 @@ Route::get('/press-release-gratis', [LandingSeoController::class, 'pressReleaseG
 Route::get('/backlink-berita-gratis', [LandingSeoController::class, 'backlinkBeritaGratis'])->name('seo.backlink-berita');
 Route::get('/post-berita-gratis', [LandingSeoController::class, 'postBeritaGratis'])->name('seo.post-berita');
 Route::get('/aturan-press-release', [LandingSeoController::class, 'rules'])->name('rules');
+
+// Editorial Credibility & E-E-A-T Pages
+Route::get('/tentang-kami', [EditorialPageController::class, 'about'])->name('pages.about');
+Route::get('/redaksi', [EditorialPageController::class, 'editorialTeam'])->name('pages.editorial');
+Route::get('/kontak', [EditorialPageController::class, 'contact'])->name('pages.contact');
+Route::get('/pedoman-media-siber', [EditorialPageController::class, 'cyberMediaGuidelines'])->name('pages.cyber-guidelines');
+Route::get('/kebijakan-privasi', [EditorialPageController::class, 'privacyPolicy'])->name('pages.privacy');
 
 // Technical SEO & AI Crawler Endpoints
 Route::get('/robots.txt', [SeoFileController::class, 'robots'])->name('seo.robots');

@@ -80,6 +80,11 @@ XML;
                 ['loc' => route('seo.backlink-berita'), 'priority' => '0.9', 'freq' => 'weekly'],
                 ['loc' => route('seo.post-berita'), 'priority' => '0.9', 'freq' => 'weekly'],
                 ['loc' => route('rules'), 'priority' => '0.7', 'freq' => 'monthly'],
+                ['loc' => route('pages.about'), 'priority' => '0.7', 'freq' => 'monthly'],
+                ['loc' => route('pages.editorial'), 'priority' => '0.7', 'freq' => 'monthly'],
+                ['loc' => route('pages.contact'), 'priority' => '0.7', 'freq' => 'monthly'],
+                ['loc' => route('pages.cyber-guidelines'), 'priority' => '0.6', 'freq' => 'monthly'],
+                ['loc' => route('pages.privacy'), 'priority' => '0.5', 'freq' => 'monthly'],
             ];
 
             foreach (Category::where('is_active', true)->get() as $cat) {

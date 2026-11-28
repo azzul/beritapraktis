@@ -148,7 +148,7 @@
     <!-- Editorial Footer -->
     <footer class="mt-16 border-t border-gray-200 bg-white">
         <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-            <div class="grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-5">
                 <div class="md:col-span-2">
                     <img src="{{ asset('images/logo.svg') }}" alt="BeritaPraktis" class="h-8 w-auto">
                     <p class="mt-3 max-w-md text-sm leading-relaxed text-gray-600">
@@ -164,6 +164,17 @@
                         <li><a href="{{ route('seo.backlink-berita') }}" class="hover:text-red-700">Backlink Berita Gratis</a></li>
                         <li><a href="{{ route('seo.post-berita') }}" class="hover:text-red-700">Post Berita Gratis</a></li>
                         <li><a href="{{ route('rules') }}" class="hover:text-red-700">Aturan &amp; Pedoman Redaksi</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-900">Tentang &amp; Redaksi</h3>
+                    <ul class="mt-3 space-y-2 text-sm text-gray-600">
+                        <li><a href="{{ route('pages.about') }}" class="hover:text-red-700">Tentang Kami</a></li>
+                        <li><a href="{{ route('pages.editorial') }}" class="hover:text-red-700">Susunan Redaksi</a></li>
+                        <li><a href="{{ route('pages.contact') }}" class="hover:text-red-700">Kontak Redaksi</a></li>
+                        <li><a href="{{ route('pages.cyber-guidelines') }}" class="hover:text-red-700">Pedoman Media Siber</a></li>
+                        <li><a href="{{ route('pages.privacy') }}" class="hover:text-red-700">Kebijakan Privasi</a></li>
                     </ul>
                 </div>
 
